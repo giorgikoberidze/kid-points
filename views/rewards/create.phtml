@@ -1,0 +1,67 @@
+<div class="mb-4">
+    <a href="<?= $baseUrl ?>/rewards" class="text-muted text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i><?= $lang->t('back') ?? 'Back' ?>
+    </a>
+</div>
+
+<h2 class="mb-4"><?= $lang->t('add_reward') ?></h2>
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-body">
+        <form method="POST" action="<?= $baseUrl ?>/rewards">
+            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('reward_name') ?> (<?= $lang->t('english') ?>) *</label>
+                <input type="text" name="name" class="form-control" required autofocus>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('reward_name') ?> (<?= $lang->t('georgian') ?>)</label>
+                <input type="text" name="name_ka" class="form-control">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('description') ?> (<?= $lang->t('english') ?>)</label>
+                <textarea name="description" class="form-control" rows="2"></textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('description') ?> (<?= $lang->t('georgian') ?>)</label>
+                <textarea name="description_ka" class="form-control" rows="2"></textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('point_cost') ?> *</label>
+                <input type="number" name="point_cost" class="form-control" required min="1">
+                <small class="text-muted"><?= $lang->t('point_cost_hint') ?></small>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('money_value') ?></label>
+                <input type="number" name="money_value" class="form-control" step="0.01">
+                <small class="text-muted"><?= $lang->t('money_value_hint') ?></small>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('icon') ?></label>
+                <input type="text" name="icon" class="form-control" value="bi-gift">
+                <small class="text-muted"><?= $lang->t('icon_hint') ?></small>
+            </div>
+
+            <div class="mb-4 form-check">
+                <input type="checkbox" name="is_active" class="form-check-input" value="1" id="isActive" checked>
+                <label class="form-check-label" for="isActive"><?= $lang->t('active') ?></label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i><?= $lang->t('save') ?>
+                </button>
+                <a href="<?= $baseUrl ?>/rewards" class="btn btn-outline-secondary">
+                    <?= $lang->t('cancel') ?>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

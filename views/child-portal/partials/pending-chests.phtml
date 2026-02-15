@@ -1,0 +1,107 @@
+<?php
+/**
+ * Pending Bonus Chests Display
+ * Shows bonus chests that have been awarded by admin but not yet opened
+ *
+ * Required variables:
+ * - $pendingChests: array of pending chest records
+ * - $lang: Lang instance for translations
+ * - $baseUrl: Base URL for API calls
+ * - $csrfToken: CSRF token for form submission
+ */
+?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pendingChests = <?= json_encode(array_map(function($chest) {
+        return [
+            'id' => (int)$chest['id'],
+            'type' => $chest['chest_type'],
+            'reward_type' => $chest['reward_type'],
+            'reward_value' => (int)$chest['reward_value'],
+            'visual' => 'bonus'
+        ];
+    }, $pendingChests)) ?>;
+
+    const langStrings = <?= json_encode([
+        'bonus_chest_title' => $lang->t('bonus_chest') ?? 'Bonus Chest!',
+        'tap_to_open' => $lang->t('tap_to_open') ?? 'Tap to open!',
+        'congratulations' => $lang->t('congratulations') ?? 'Congratulations!',
+        'awesome' => $lang->t('awesome') ?? 'Awesome!',
+        'xp' => $lang->t('pts') ?? 'XP',
+        'multiplier_24h' => $lang->t('multiplier_24h') ?? '2x Points for 24 hours!'
+    ]) ?>;
+
+    const csrfToken = '<?= $csrfToken ?>';
+    const baseUrl = '<?= $baseUrl ?>';
+
+    // Show each pending chest with a delay between them
+    let delay = 500;
+    pendingChests.forEach((chest, index) => {
+        setTimeout(() => {
+            showPendingChest(chest, langStrings, csrfToken, baseUrl);
+        }, delay + (index * 2000)); // 2 second gap between chests
+    });
+});
+
+function showPendingChest(chest, langStrings, csrfToken, baseUrl) {
+    if (!window.gameCelebration) {
+        console.error('gameCelebration not available');
+        return;
+    }
+
+    // Prepare chest data for display
+    const chestData = {
+        type: 'bonus',
+        visual: 'bonus',
+        reward_value: chest.reward_type === 'fixed_xp' ? chest.reward_value : 0,
+        has_multiplier: chest.reward_type === 'multiplier',
+        multiplier: chest.reward_type === 'multiplier' ? chest.reward_value / 10 : 0
+    };
+
+    window.gameCelebration.showTreasureChest(chestData, {
+        title: langStrings.bonus_chest_title,
+        subtitle: langStrings.tap_to_open,
+        congratulations: langStrings.congratulations,
+        awesome: langStrings.awesome,
+        xp: langStrings.xp,
+        multiplier_24h: langStrings.multiplier_24h
+    }, function(openedChest) {
+        // Submit pending chest opening to server
+        fetch(baseUrl + '/my/chest/open-pending', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: '_csrf=' + encodeURIComponent(csrfToken) + '&chest_id=' + encodeURIComponent(chest.id)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update points display if exists
+                const pointsDisplay = document.querySelector('[data-points-balance]');
+                if (pointsDisplay && data.new_balance) {
+                    pointsDisplay.textContent = data.new_balance.toLocaleString();
+                }
+
+                // Also update the big points display
+                const bigPointsDisplay = document.querySelector('.points-value');
+                if (bigPointsDisplay && data.new_balance) {
+                    bigPointsDisplay.textContent = data.new_balance.toLocaleString();
+                }
+
+                // Show multiplier badge if applicable
+                if (data.multiplier_applied && data.multiplier_value > 1) {
+                    window.gameCelebration.showMultiplierBadge(data.multiplier_value, 24);
+                }
+
+                // Trigger pet celebration
+                if (window.petMascot) {
+                    window.petMascot.onChestOpened();
+                }
+            }
+        })
+        .catch(err => console.error('Pending chest open error:', err));
+    });
+}
+</script>

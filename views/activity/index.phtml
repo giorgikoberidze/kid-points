@@ -1,0 +1,161 @@
+<?php
+$locale = $lang->getLocale();
+?>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 style="font-family: 'DM Serif Display', serif;">
+        <i class="bi bi-activity me-2"></i><?= $lang->t('activity_log') ?>
+    </h4>
+    <span class="badge bg-secondary"><?= $totalCount ?> <?= $lang->t('total') ?></span>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label"><?= $lang->t('child') ?></label>
+                <select name="child_id" class="form-select">
+                    <option value=""><?= $lang->t('all') ?></option>
+                    <?php foreach ($children as $c): ?>
+                        <option value="<?= $c['id'] ?>" <?= ($filters['child_id'] ?? '') == $c['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($c['nickname'] ?? $c['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label"><?= $lang->t('action') ?></label>
+                <select name="action" class="form-select">
+                    <option value=""><?= $lang->t('all') ?></option>
+                    <?php foreach ($distinctActions as $act): ?>
+                        <option value="<?= $act ?>" <?= ($filters['action'] ?? '') === $act ? 'selected' : '' ?>>
+                            <?= $activityService->getActionLabel($act, $locale) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label"><?= $lang->t('actor') ?></label>
+                <select name="actor_type" class="form-select">
+                    <option value=""><?= $lang->t('all') ?></option>
+                    <option value="child" <?= ($filters['actor_type'] ?? '') === 'child' ? 'selected' : '' ?>><?= $lang->t('child') ?></option>
+                    <option value="admin" <?= ($filters['actor_type'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label"><?= $lang->t('date_from') ?></label>
+                <input type="date" name="date_from" class="form-control" value="<?= $filters['date_from'] ?? '' ?>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label"><?= $lang->t('date_to') ?></label>
+                <input type="date" name="date_to" class="form-control" value="<?= $filters['date_to'] ?? '' ?>">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Activity List -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th><?= $lang->t('date') ?></th>
+                    <th><?= $lang->t('child') ?></th>
+                    <th><?= $lang->t('action') ?></th>
+                    <th><?= $lang->t('details') ?></th>
+                    <th><?= $lang->t('actor') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if (empty($activities)): ?>
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <p class="mb-0 mt-2"><?= $lang->t('no_activity_yet') ?? 'No activity yet' ?></p>
+                    </td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($activities as $activity): ?>
+                <tr>
+                    <td>
+                        <span><?= date('M j', strtotime($activity['created_at'])) ?></span>
+                        <small class="d-block text-muted"><?= date('H:i', strtotime($activity['created_at'])) ?></small>
+                    </td>
+                    <td>
+                        <?php if ($activity['child_id']): ?>
+                            <a href="<?= $baseUrl ?>/children/<?= $activity['child_id'] ?>">
+                                <?= htmlspecialchars($activity['child_name'] ?? $activity['child_full_name'] ?? 'Unknown') ?>
+                            </a>
+                        <?php else: ?>
+                            <span class="text-muted">-</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <span class="badge bg-<?= getActionBadgeColor($activity['action']) ?>">
+                            <?= $activityService->getActionLabel($activity['action'], $locale) ?>
+                        </span>
+                    </td>
+                    <td>
+                        <small><?= htmlspecialchars($activityService->formatDetails($activity['action'], $activity['details'], $locale)) ?></small>
+                    </td>
+                    <td>
+                        <span class="badge bg-<?= $activity['actor_type'] === 'admin' ? 'dark' : 'info' ?>">
+                            <?= $activity['actor_type'] === 'admin' ? 'Admin' : $lang->t('child') ?>
+                        </span>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <?php if ($totalPages > 1): ?>
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination mb-0 justify-content-center">
+                <?php
+                $queryParams = $filters;
+                for ($i = 1; $i <= $totalPages; $i++):
+                    $queryParams['page'] = $i;
+                ?>
+                    <li class="page-item <?= $i === $currentPage ? 'active' : '' ?>">
+                        <a class="page-link" href="?<?= http_build_query($queryParams) ?>"><?= $i ?></a>
+                    </li>
+                <?php endfor; ?>
+            </ul>
+        </nav>
+    </div>
+    <?php endif; ?>
+</div>
+
+<?php
+function getActionBadgeColor(string $action): string {
+    $colors = [
+        'goal_created' => 'success',
+        'goal_updated' => 'info',
+        'goal_deleted' => 'danger',
+        'goal_completed' => 'success',
+        'goal_favorite_set' => 'warning',
+        'goal_favorite_unset' => 'secondary',
+        'reward_requested' => 'primary',
+        'reward_cancelled' => 'warning',
+        'reward_fulfilled' => 'success',
+        'wishlist_added' => 'info',
+        'wishlist_removed' => 'secondary',
+        'child_login' => 'info',
+        'child_logout' => 'secondary',
+        'points_earned' => 'success',
+        'points_deducted' => 'danger',
+        'points_adjusted' => 'info',
+    ];
+    return $colors[$action] ?? 'secondary';
+}
+?>

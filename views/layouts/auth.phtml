@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="<?= $currentLang ?? 'en' ?>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $pageTitle ?? $lang->t('app_name') ?> - <?= $lang->t('app_name') ?></title>
+    <link rel="icon" type="image/svg+xml" href="<?= $baseUrl ?>/favicon.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="<?= $baseUrl ?>/assets/css/style.css" rel="stylesheet">
+</head>
+<body class="auth-container">
+    <!-- Decorative floating shapes -->
+    <div style="position: absolute; top: 15%; left: 8%; width: 150px; height: 150px; background: rgba(247, 183, 49, 0.15); border-radius: 50%; animation: floatOrb 12s ease-in-out infinite;"></div>
+    <div style="position: absolute; bottom: 25%; right: 15%; width: 100px; height: 100px; background: rgba(155, 109, 255, 0.1); border-radius: 50%; animation: floatOrb 18s ease-in-out infinite reverse;"></div>
+
+    <div class="auth-card">
+        <div class="auth-brand">
+            <i class="bi bi-star-fill"></i>
+            <?= $lang->t('app_name') ?>
+        </div>
+
+        <?php include __DIR__ . '/../partials/flash.phtml'; ?>
+
+        <?= $content ?>
+
+        <div class="text-center mt-4">
+            <div class="btn-group btn-group-sm">
+                <a href="<?= $baseUrl ?>/language/en" class="btn btn-<?= $lang->getLocale() === 'en' ? 'primary' : 'outline-primary' ?> btn-sm">English</a>
+                <a href="<?= $baseUrl ?>/language/ka" class="btn btn-<?= $lang->getLocale() === 'ka' ? 'primary' : 'outline-primary' ?> btn-sm">ქართული</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

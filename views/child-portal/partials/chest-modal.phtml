@@ -1,0 +1,69 @@
+<?php
+/**
+ * Treasure Chest Modal
+ * Include this partial when a chest is available for the child
+ *
+ * Required variables:
+ * - $chest: array with chest data (type, visual, reward_value, has_multiplier, multiplier)
+ * - $lang: Lang instance for translations
+ * - $baseUrl: Base URL for API calls
+ * - $csrfToken: CSRF token for form submission
+ */
+
+$isGolden = ($chest['visual'] ?? '') === 'golden' || ($chest['type'] ?? '') === 'sunday';
+$chestType = $chest['type'] ?? 'daily';
+?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chestData = <?= json_encode([
+        'type' => $chest['type'],
+        'visual' => $chest['visual'],
+        'reward_value' => $chest['reward_value'],
+        'has_multiplier' => $chest['has_multiplier'],
+        'multiplier' => $chest['multiplier'] ?? 0
+    ]) ?>;
+
+    const langStrings = <?= json_encode([
+        'title' => $isGolden ? $lang->t('sunday_golden_chest') : $lang->t('daily_chest'),
+        'subtitle' => $lang->t('tap_to_open'),
+        'congratulations' => $lang->t('congratulations'),
+        'awesome' => $lang->t('awesome'),
+        'xp' => $lang->t('pts'),
+        'multiplier_24h' => $lang->t('multiplier_24h')
+    ]) ?>;
+
+    const csrfToken = '<?= $csrfToken ?>';
+    const baseUrl = '<?= $baseUrl ?>';
+
+    // Show chest with slight delay for page load
+    setTimeout(() => {
+        window.gameCelebration.showTreasureChest(chestData, langStrings, function(chest) {
+            // Submit chest opening to server
+            fetch(baseUrl + '/my/chest/open', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: '_csrf=' + encodeURIComponent(csrfToken) + '&chest_type=' + encodeURIComponent(chest.type)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update points display if exists
+                    const pointsDisplay = document.querySelector('[data-points-balance]');
+                    if (pointsDisplay && data.new_balance) {
+                        pointsDisplay.textContent = data.new_balance.toLocaleString();
+                    }
+
+                    // Show multiplier badge if applicable
+                    if (data.multiplier_applied && data.multiplier_value > 1) {
+                        window.gameCelebration.showMultiplierBadge(data.multiplier_value, 24);
+                    }
+                }
+            })
+            .catch(err => console.error('Chest open error:', err));
+        });
+    }, 500);
+});
+</script>

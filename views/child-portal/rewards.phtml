@@ -1,0 +1,201 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+$descField = $locale === 'ka' ? 'description_ka' : 'description';
+$useGameTerms = ($settings['use_game_terms'] ?? '0') === '1';
+$ptsLabel = $useGameTerms ? $lang->t('pts_game') : $lang->t('pts');
+$shopTitle = $useGameTerms ? $lang->t('rewards_game') : $lang->t('rewards');
+$availableTitle = $useGameTerms ? $lang->t('available_rewards_game') : $lang->t('available_rewards');
+$requestLabel = $useGameTerms ? $lang->t('request_reward_game') : $lang->t('request');
+?>
+
+<!-- Shop Header -->
+<div class="shop-header">
+    <div class="shop-title-section">
+        <div class="shop-icon">
+            <i class="ph-fill ph-storefront"></i>
+        </div>
+        <div>
+            <h4 class="shop-title"><?= $shopTitle ?></h4>
+            <p class="shop-subtitle"><?= $useGameTerms ? $lang->t('shop_subtitle_game') : $lang->t('shop_subtitle') ?></p>
+        </div>
+    </div>
+    <div class="wallet-display">
+        <div class="wallet-icon">
+            <i class="ph-fill ph-wallet"></i>
+        </div>
+        <div class="wallet-info">
+            <span class="wallet-amount"><?= number_format($child['points_balance']) ?></span>
+            <span class="wallet-label"><?= $useGameTerms ? $lang->t('available') : $ptsLabel ?></span>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Requests -->
+<?php if (!empty($pendingRedemptions)): ?>
+<div class="card mb-4" style="border-color: var(--accent-warning); background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fef3c7 100%);">
+    <div class="card-header" style="background: transparent; border-bottom: 1px solid #fcd34d;">
+        <h6 class="mb-0" style="color: #92400e;">
+            <i class="ph-fill ph-hourglass-medium me-2"></i>
+            <?= $lang->t('pending_requests') ?>
+        </h6>
+    </div>
+    <div class="list-group list-group-flush" style="background: transparent;">
+        <?php foreach ($pendingRedemptions as $pr): ?>
+            <div class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="shop-item-icon" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                        <i class="bi <?= $pr['reward_icon'] ?? 'bi-gift' ?>"></i>
+                    </div>
+                    <div>
+                        <span class="fw-semibold"><?= htmlspecialchars($locale === 'ka' && !empty($pr['reward_name_ka']) ? $pr['reward_name_ka'] : $pr['reward_name']) ?></span>
+                        <small class="text-muted d-block">
+                            <?= $pr['points_spent'] ?> <?= $ptsLabel ?> &bull;
+                            <?= $lang->formatDate($pr['created_at'], 'long') ?>
+                        </small>
+                    </div>
+                </div>
+                <form action="<?= $baseUrl ?>/my/rewards/<?= $pr['id'] ?>/cancel" method="POST" class="confirm-form"
+                      data-confirm-message="<?= htmlspecialchars($lang->t('confirm_cancel_request')) ?>"
+                      data-confirm-type="danger">
+                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger btn-game">
+                        <i class="ph ph-x me-1"></i><?= $lang->t('cancel') ?>
+                    </button>
+                </form>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Shop Items -->
+<?php if (empty($rewards)): ?>
+    <div class="card">
+        <div class="card-body text-center text-muted py-5">
+            <i class="ph ph-storefront" style="font-size: 4rem; opacity: 0.3;"></i>
+            <p class="mb-0 mt-3"><?= $lang->t('no_rewards_available') ?></p>
+        </div>
+    </div>
+<?php else: ?>
+    <div class="shop-grid">
+        <?php foreach ($rewards as $reward): ?>
+            <div class="shop-item <?= $reward['can_afford'] ? 'affordable' : 'locked' ?>">
+                <div class="shop-item-glow"></div>
+
+                <?php if ($reward['in_wishlist']): ?>
+                <div class="wishlist-badge">
+                    <i class="ph-fill ph-heart"></i>
+                </div>
+                <?php endif; ?>
+
+                <div class="shop-item-icon">
+                    <i class="bi <?= $reward['icon'] ?? 'bi-gift' ?>"></i>
+                </div>
+
+                <h6 class="shop-item-name"><?= htmlspecialchars($reward[$nameField] ?? $reward['name']) ?></h6>
+
+                <?php if (!empty($reward[$descField] ?? $reward['description'])): ?>
+                <p class="text-muted small mb-3" style="min-height: 40px;">
+                    <?= htmlspecialchars(mb_strimwidth($reward[$descField] ?? $reward['description'], 0, 60, '...')) ?>
+                </p>
+                <?php endif; ?>
+
+                <div class="shop-item-price">
+                    <i class="ph-fill ph-coin"></i>
+                    <span><?= number_format($reward['point_cost']) ?></span>
+                </div>
+
+                <?php if ($reward['money_value']): ?>
+                <small class="text-muted d-block mb-3">
+                    = <?= $currencySymbol ?><?= number_format($reward['money_value'], 2) ?>
+                </small>
+                <?php endif; ?>
+
+                <?php if (!$reward['can_afford']): ?>
+                    <div class="shop-item-progress">
+                        <div class="mini-progress">
+                            <div class="mini-progress-fill" style="width: <?= min(100, ($child['points_balance'] / $reward['point_cost']) * 100) ?>%"></div>
+                        </div>
+                        <span class="need-more">
+                            <?= number_format($reward['point_cost'] - $child['points_balance']) ?> <?= $useGameTerms ? $lang->t('more_needed_game') : $lang->t('more_needed') ?>
+                        </span>
+                    </div>
+                <?php else: ?>
+                    <form action="<?= $baseUrl ?>/my/rewards/request" method="POST" class="confirm-form purchase-form"
+                          data-confirm-message="<?= htmlspecialchars($lang->t('confirm_request_reward')) ?>"
+                          data-confirm-type="purchase"
+                          data-item-name="<?= htmlspecialchars($reward[$nameField] ?? $reward['name']) ?>"
+                          data-item-icon="bi <?= $reward['icon'] ?? 'bi-gift' ?>"
+                          data-item-cost="<?= $reward['point_cost'] ?>"
+                          data-item-cost-label="<?= htmlspecialchars($ptsLabel) ?>">
+                        <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                        <input type="hidden" name="reward_id" value="<?= $reward['id'] ?>">
+                        <button type="submit" class="btn-purchase">
+                            <i class="ph-fill ph-shopping-cart"></i>
+                            <?= $requestLabel ?>
+                        </button>
+                    </form>
+                <?php endif; ?>
+
+                <!-- Wishlist button -->
+                <form action="<?= $baseUrl ?>/my/wishlist/<?= $reward['in_wishlist'] ? 'remove' : 'add' ?>" method="POST" class="d-inline">
+                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                    <input type="hidden" name="reward_id" value="<?= $reward['id'] ?>">
+                    <button type="submit" class="btn-wishlist <?= $reward['in_wishlist'] ? 'active' : '' ?>"
+                            title="<?= $reward['in_wishlist'] ? $lang->t('remove_from_wishlist') : $lang->t('add_to_wishlist') ?>">
+                        <i class="ph<?= $reward['in_wishlist'] ? '-fill' : '' ?> ph-heart"></i>
+                    </button>
+                </form>
+            </div>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
+<script>
+// Handle confirmation dialogs
+document.querySelectorAll('.confirm-form').forEach(form => {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const message = this.dataset.confirmMessage;
+        const type = this.dataset.confirmType || 'warning';
+        const isPurchase = this.classList.contains('purchase-form');
+
+        // Build options for confirm dialog
+        const options = {
+            message: message,
+            confirmText: isPurchase ? '<?= $lang->t('purchase') ?>' : '<?= $lang->t('confirm_yes') ?>',
+            cancelText: '<?= $lang->t('confirm_no') ?>',
+            type: type
+        };
+
+        // Add item details for purchase confirmations
+        if (isPurchase && this.dataset.itemName) {
+            options.item = {
+                name: this.dataset.itemName,
+                icon: this.dataset.itemIcon,
+                cost: parseInt(this.dataset.itemCost, 10),
+                costLabel: this.dataset.itemCostLabel
+            };
+        }
+
+        if (window.gameCelebration) {
+            const confirmed = await window.gameCelebration.confirm(options);
+
+            if (confirmed) {
+                // Small delay to let coin sound play before page navigates
+                if (isPurchase) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+                this.submit();
+            }
+        } else {
+            // Fallback to native confirm
+            if (confirm(message)) {
+                this.submit();
+            }
+        }
+    });
+});
+</script>

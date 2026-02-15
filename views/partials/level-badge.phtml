@@ -1,0 +1,24 @@
+<?php
+/**
+ * Level Badge Component
+ * @param array $level - Level data with name, name_ka, icon, badge_class, stars
+ * @param string $size - 'sm', 'md', 'lg' (default: md)
+ */
+if (empty($level)) return;
+
+$size = $size ?? 'md';
+$locale = $lang->getLocale();
+$levelName = $locale === 'ka' && !empty($level['name_ka']) ? $level['name_ka'] : $level['name'];
+$sizeClass = $size === 'sm' ? 'level-sm' : ($size === 'lg' ? 'level-lg' : '');
+$badgeClass = $level['badge_class'] ?? 'level-beginner';
+$stars = (int)($level['stars'] ?? 1);
+?>
+<div class="level-badge <?= $badgeClass ?> <?= $sizeClass ?>">
+    <span class="level-icon"><?= $level['icon'] ?? '🌱' ?></span>
+    <span class="level-name"><?= htmlspecialchars($levelName) ?></span>
+    <span class="level-stars">
+        <?php for ($i = 0; $i < $stars; $i++): ?>
+            <i class="bi bi-star-fill star"></i>
+        <?php endfor; ?>
+    </span>
+</div>

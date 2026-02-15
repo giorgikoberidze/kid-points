@@ -1,0 +1,65 @@
+<div class="mb-4">
+    <a href="<?= $baseUrl ?>/categories" class="text-muted text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i><?= $lang->t('back') ?? 'Back' ?>
+    </a>
+</div>
+
+<h2 class="mb-4"><?= $lang->t('add_category') ?></h2>
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-body">
+        <form method="POST" action="<?= $baseUrl ?>/categories">
+            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('category_name') ?> (<?= $lang->t('english') ?>) *</label>
+                <input type="text" name="name" class="form-control" required autofocus>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('category_name') ?> (<?= $lang->t('georgian') ?>)</label>
+                <input type="text" name="name_ka" class="form-control">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('type') ?></label>
+                <select name="type" class="form-select">
+                    <option value="positive"><?= $lang->t('positive') ?></option>
+                    <option value="negative"><?= $lang->t('negative') ?></option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('icon') ?></label>
+                <input type="text" name="icon" class="form-control" value="bi-star" placeholder="bi-star">
+                <small class="text-muted">
+                    Bootstrap Icons: bi-star, bi-book, bi-house, bi-heart, bi-trophy, bi-lightning, bi-emoji-smile, bi-hand-thumbs-up
+                </small>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('default_points') ?></label>
+                <input type="number" name="default_points" class="form-control" value="5">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('sort_order') ?></label>
+                <input type="number" name="sort_order" class="form-control" value="0">
+            </div>
+
+            <div class="mb-4 form-check">
+                <input type="checkbox" name="is_active" class="form-check-input" value="1" id="isActive" checked>
+                <label class="form-check-label" for="isActive"><?= $lang->t('active') ?></label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i><?= $lang->t('save') ?>
+                </button>
+                <a href="<?= $baseUrl ?>/categories" class="btn btn-outline-secondary">
+                    <?= $lang->t('cancel') ?>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

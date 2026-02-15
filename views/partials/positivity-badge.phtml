@@ -1,0 +1,80 @@
+<?php
+/**
+ * Positivity Badge Partial
+ *
+ * Required variables:
+ * - $positivity: array from PositivityService::getPositivityStats()
+ * - $lang: Lang instance
+ *
+ * Optional variables:
+ * - $size: 'sm', 'md' (default), 'lg'
+ * - $showLabel: bool (default: true)
+ * - $showTooltip: bool (default: true)
+ */
+
+$size = $size ?? 'md';
+$showLabel = $showLabel ?? true;
+$showTooltip = $showTooltip ?? true;
+
+$sizeClasses = [
+    'sm' => ['badge' => 'px-2 py-1', 'emoji' => 'fs-6', 'text' => 'small'],
+    'md' => ['badge' => 'px-3 py-2', 'emoji' => 'fs-5', 'text' => ''],
+    'lg' => ['badge' => 'px-4 py-3', 'emoji' => 'fs-3', 'text' => 'fs-5'],
+];
+$s = $sizeClasses[$size] ?? $sizeClasses['md'];
+
+$percentage = $positivity['percentage'];
+$emoji = $positivity['emoji'];
+$color = $positivity['color'];
+$label = $lang->t($positivity['label']);
+$trend = $positivity['trend'];
+$trendChange = $positivity['trend_change'];
+
+// Trend icons and colors
+$trendIcon = '';
+$trendColor = '';
+if ($trend === 'up') {
+    $trendIcon = '↑';
+    $trendColor = '#22c55e';
+} elseif ($trend === 'down') {
+    $trendIcon = '↓';
+    $trendColor = '#ef4444';
+} elseif ($trend === 'stable') {
+    $trendIcon = '→';
+    $trendColor = '#9ca3af';
+}
+
+// Tooltip content
+$tooltipContent = '';
+if ($showTooltip) {
+    $tooltipContent = $lang->t('positive') . ': ' . $positivity['total_positive'] . ' ' . $lang->t('points') . '&#10;';
+    $tooltipContent .= $lang->t('negative') . ': ' . $positivity['total_negative'] . ' ' . $lang->t('points') . '&#10;';
+    if ($percentage !== null) {
+        $tooltipContent .= $lang->t('positivity') . ': ' . $percentage . '%';
+    }
+}
+?>
+<div class="positivity-badge d-inline-flex align-items-center gap-2 rounded-pill <?= $s['badge'] ?>"
+     style="background: linear-gradient(135deg, <?= $color ?>20, <?= $color ?>40); border: 2px solid <?= $color ?>;"
+     <?php if ($showTooltip): ?>
+     title="<?= $tooltipContent ?>"
+     data-bs-toggle="tooltip"
+     data-bs-html="true"
+     <?php endif; ?>>
+    <span class="<?= $s['emoji'] ?>"><?= $emoji ?></span>
+    <span class="<?= $s['text'] ?> fw-semibold" style="color: <?= $color ?>;">
+        <?php if ($percentage !== null): ?>
+            <?= $percentage ?>%
+        <?php else: ?>
+            --
+        <?php endif; ?>
+    </span>
+    <?php if ($showLabel): ?>
+        <span class="<?= $s['text'] ?> text-muted"><?= $label ?></span>
+    <?php endif; ?>
+    <?php if ($trend && $trendIcon): ?>
+        <span class="<?= $s['text'] ?> fw-bold" style="color: <?= $trendColor ?>;" title="<?= $trendChange > 0 ? '+' : '' ?><?= $trendChange ?>%">
+            <?= $trendIcon ?>
+        </span>
+    <?php endif; ?>
+</div>

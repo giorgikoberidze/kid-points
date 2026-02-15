@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24"/>
+      <stop offset="100%" style="stop-color:#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="6" fill="url(#bgGrad)"/>
+  <path d="M16 6l2.47 5.01L24 11.9l-4 3.9.94 5.5L16 18.7l-4.94 2.6.94-5.5-4-3.9 5.53-.89L16 6z" fill="url(#starGrad)"/>
+  <circle cx="24" cy="8" r="2" fill="#fef3c7" opacity="0.8"/>
+  <circle cx="8" cy="10" r="1.5" fill="#fef3c7" opacity="0.6"/>
+</svg>

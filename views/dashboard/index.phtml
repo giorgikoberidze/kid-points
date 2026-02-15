@@ -1,0 +1,131 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+?>
+<div class="mb-4">
+    <h2 class="mb-1"><?= $lang->t('welcome_back') ?>, <?= htmlspecialchars($_SESSION['user']['display_name'] ?? 'Admin') ?>!</h2>
+    <p class="text-muted mb-0"><?= $lang->t('dashboard') ?> &bull; <?= date('l, F j, Y') ?></p>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="stat-card purple">
+            <div class="stat-label"><?= $lang->t('total_children') ?></div>
+            <div class="stat-value"><?= $totalChildren ?></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card green">
+            <div class="stat-label"><?= $lang->t('total_points_given') ?> (<?= $lang->t('today') ?>)</div>
+            <div class="stat-value">+<?= $totalPointsToday ?></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card yellow">
+            <div class="stat-label"><?= $lang->t('reward_redemptions') ?> (<?= $lang->t('pending') ?>)</div>
+            <div class="stat-value"><?= $pendingRedemptions ?></div>
+        </div>
+    </div>
+</div>
+
+<?php if (empty($children)): ?>
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="mb-4">
+                <i class="bi bi-people" style="font-size: 4rem; color: var(--coral); opacity: 0.5;"></i>
+            </div>
+            <h4><?= $lang->t('no_children') ?></h4>
+            <p class="text-muted mb-4"><?= $lang->t('get_started_add_child') ?></p>
+            <a href="<?= $baseUrl ?>/children/create" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-lg me-2"></i><?= $lang->t('add_child') ?>
+            </a>
+        </div>
+    </div>
+<?php else: ?>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0"><?= $lang->t('children') ?></h4>
+        <a href="<?= $baseUrl ?>/children/create" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i><?= $lang->t('add_child') ?>
+        </a>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <?php foreach ($children as $child): ?>
+        <div class="col-md-6 col-lg-4">
+            <div class="card child-card h-100">
+                <div class="child-photo-wrapper">
+                    <?php if ($child['photo_path']): ?>
+                        <img src="<?= $baseUrl ?>/<?= htmlspecialchars($child['photo_path']) ?>" class="child-photo-round" alt="<?= htmlspecialchars($child['nickname'] ?? $child['name']) ?>">
+                    <?php else: ?>
+                        <div class="child-photo-placeholder-round">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="card-title"><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></h5>
+                    <?php if ($child['date_of_birth']): ?>
+                        <p class="text-muted mb-3" style="font-size: 0.9rem;">
+                            <?php
+                                $age = (int)((time() - strtotime($child['date_of_birth'])) / 31557600);
+                                echo $age . ' ' . $lang->t('years_old');
+                            ?>
+                        </p>
+                    <?php endif; ?>
+
+                    <div class="mb-4">
+                        <div class="points-display <?= $child['points_balance'] >= 0 ? 'points-positive' : 'points-negative' ?>">
+                            <?= $child['points_balance'] ?> <?= $lang->t('points') ?>
+                        </div>
+                        <div class="money-equivalent">
+                            <?= $currencySymbol ?><?= number_format($child['points_balance'] / max(1, $pointsPerLari), 2) ?>
+                        </div>
+                        <?php if (!empty($child['level_name'])): ?>
+                            <div class="mt-2">
+                                <?php
+                                $level = [
+                                    'name' => $child['level_name'],
+                                    'name_ka' => $child['level_name_ka'] ?? null,
+                                    'icon' => $child['level_icon'] ?? '🌱',
+                                    'badge_class' => $child['level_badge_class'] ?? 'level-beginner',
+                                    'stars' => $child['level_stars'] ?? 1,
+                                ];
+                                $size = 'sm';
+                                include __DIR__ . '/../partials/level-badge.phtml';
+                                ?>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (($child['max_streak'] ?? 0) > 0): ?>
+                            <div class="mt-2">
+                                <span class="streak-badge">
+                                    <i class="bi bi-fire"></i> <?= $child['max_streak'] ?>
+                                </span>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (isset($positivityStats[$child['id']])): ?>
+                            <div class="mt-2">
+                                <?php
+                                $positivity = $positivityStats[$child['id']];
+                                $size = 'sm';
+                                $showLabel = false;
+                                $showTooltip = true;
+                                include __DIR__ . '/../partials/positivity-badge.phtml';
+                                ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a href="<?= $baseUrl ?>/points/add/<?= $child['id'] ?>" class="btn btn-success btn-sm flex-fill">
+                            <i class="bi bi-plus-lg me-1"></i><?= $lang->t('add_points') ?>
+                        </a>
+                        <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>" class="btn btn-outline-primary btn-sm flex-fill">
+                            <i class="bi bi-eye me-1"></i><?= $lang->t('view_profile') ?>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>

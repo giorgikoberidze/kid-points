@@ -1,0 +1,35 @@
+<h4 class="text-center mb-4" style="color: var(--navy);"><?= $lang->t('login') ?? 'Sign In' ?></h4>
+
+<form method="POST" action="<?= $baseUrl ?>/login">
+    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+    <div class="mb-3">
+        <label class="form-label"><?= $lang->t('username') ?? 'Username' ?></label>
+        <div class="input-group">
+            <span class="input-group-text" style="background: var(--cream); border: 2px solid var(--cream-dark); border-right: none; border-radius: var(--radius-md) 0 0 var(--radius-md);">
+                <i class="bi bi-person" style="color: var(--navy-light);"></i>
+            </span>
+            <input type="text" name="username" class="form-control" style="border-left: none; border-radius: 0 var(--radius-md) var(--radius-md) 0;" required autofocus>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label"><?= $lang->t('password') ?? 'Password' ?></label>
+        <div class="input-group">
+            <span class="input-group-text" style="background: var(--cream); border: 2px solid var(--cream-dark); border-right: none; border-radius: var(--radius-md) 0 0 var(--radius-md);">
+                <i class="bi bi-lock" style="color: var(--navy-light);"></i>
+            </span>
+            <input type="password" name="password" class="form-control" style="border-left: none; border-radius: 0 var(--radius-md) var(--radius-md) 0;" required>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100 py-3">
+        <i class="bi bi-box-arrow-in-right me-2"></i><?= $lang->t('login') ?? 'Sign In' ?>
+    </button>
+</form>
+
+<div class="text-center mt-4">
+    <a href="<?= $baseUrl ?>/child-login" class="text-muted" style="font-size: 0.875rem;">
+        <i class="bi bi-star me-1"></i><?= $lang->t('child_login') ?>
+    </a>
+</div>

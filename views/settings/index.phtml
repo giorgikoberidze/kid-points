@@ -1,0 +1,341 @@
+<div class="mb-4">
+    <h2 class="mb-1"><?= $lang->t('settings') ?></h2>
+    <p class="text-muted mb-0"><?= $lang->t('configure_preferences') ?></p>
+</div>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-joystick me-2" style="color: var(--accent-purple);"></i><?= $lang->t('default_gamification_settings') ?></h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3"><?= $lang->t('default_gamification_desc') ?></p>
+                <form method="POST" action="<?= $baseUrl ?>/settings/gamification">
+                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label"><?= $lang->t('default_celebration_style') ?></label>
+                                <select name="default_celebration_style" class="form-select">
+                                    <option value="simple" <?= ($settings['default_celebration_style'] ?? 'epic') === 'simple' ? 'selected' : '' ?>><?= $lang->t('celebration_simple') ?></option>
+                                    <option value="medium" <?= ($settings['default_celebration_style'] ?? 'epic') === 'medium' ? 'selected' : '' ?>><?= $lang->t('celebration_medium') ?></option>
+                                    <option value="dramatic" <?= ($settings['default_celebration_style'] ?? 'epic') === 'dramatic' ? 'selected' : '' ?>><?= $lang->t('celebration_dramatic') ?></option>
+                                    <option value="epic" <?= ($settings['default_celebration_style'] ?? 'epic') === 'epic' ? 'selected' : '' ?>><?= $lang->t('celebration_epic') ?></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label"><?= $lang->t('default_pet_creature') ?></label>
+                                <select name="default_pet_creature" class="form-select">
+                                    <option value="dragon" <?= ($settings['default_pet_creature'] ?? 'dragon') === 'dragon' ? 'selected' : '' ?>><?= $lang->t('dragon') ?></option>
+                                    <option value="unicorn" <?= ($settings['default_pet_creature'] ?? 'dragon') === 'unicorn' ? 'selected' : '' ?>><?= $lang->t('unicorn') ?></option>
+                                    <option value="phoenix" <?= ($settings['default_pet_creature'] ?? 'dragon') === 'phoenix' ? 'selected' : '' ?>><?= $lang->t('phoenix') ?></option>
+                                    <option value="cat" <?= ($settings['default_pet_creature'] ?? 'dragon') === 'cat' ? 'selected' : '' ?>><?= $lang->t('cat') ?></option>
+                                    <option value="owl" <?= ($settings['default_pet_creature'] ?? 'dragon') === 'owl' ? 'selected' : '' ?>><?= $lang->t('owl') ?></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label"><?= $lang->t('default_pet_skin') ?></label>
+                                <select name="default_pet_skin" class="form-select">
+                                    <option value="default" <?= ($settings['default_pet_skin'] ?? 'default') === 'default' ? 'selected' : '' ?>><?= $lang->t('skin_default') ?></option>
+                                    <option value="pink" <?= ($settings['default_pet_skin'] ?? 'default') === 'pink' ? 'selected' : '' ?>><?= $lang->t('skin_pink') ?></option>
+                                    <option value="blue" <?= ($settings['default_pet_skin'] ?? 'default') === 'blue' ? 'selected' : '' ?>><?= $lang->t('skin_blue') ?></option>
+                                    <option value="gold" <?= ($settings['default_pet_skin'] ?? 'default') === 'gold' ? 'selected' : '' ?>><?= $lang->t('skin_gold') ?></option>
+                                    <option value="purple" <?= ($settings['default_pet_skin'] ?? 'default') === 'purple' ? 'selected' : '' ?>><?= $lang->t('skin_purple') ?></option>
+                                    <option value="green" <?= ($settings['default_pet_skin'] ?? 'default') === 'green' ? 'selected' : '' ?>><?= $lang->t('skin_green') ?></option>
+                                    <option value="red" <?= ($settings['default_pet_skin'] ?? 'default') === 'red' ? 'selected' : '' ?>><?= $lang->t('skin_red') ?></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mb-3">
+                                <input type="hidden" name="default_pet_enabled" value="0">
+                                <input class="form-check-input" type="checkbox" role="switch" name="default_pet_enabled" id="defaultPetEnabled" value="1"
+                                       <?= ($settings['default_pet_enabled'] ?? '1') === '1' ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="defaultPetEnabled"><?= $lang->t('default_pet_enabled') ?></label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mb-3">
+                                <input type="hidden" name="default_sound_enabled" value="0">
+                                <input class="form-check-input" type="checkbox" role="switch" name="default_sound_enabled" id="defaultSoundEnabled" value="1"
+                                       <?= ($settings['default_sound_enabled'] ?? '1') === '1' ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="defaultSoundEnabled"><?= $lang->t('default_sound_enabled') ?></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i><?= $lang->t('save') ?>
+                        </button>
+                        <button type="submit" name="apply_to_all" value="1" class="btn btn-outline-secondary">
+                            <i class="bi bi-people me-1"></i><?= $lang->t('apply_defaults_to_all') ?>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <?php if (!empty($children)): ?>
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-people me-2" style="color: var(--mint);"></i><?= $lang->t('children_gamification') ?></h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3"><?= $lang->t('children_gamification_desc') ?></p>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th><?= $lang->t('child') ?></th>
+                                <th><?= $lang->t('celebration_style') ?></th>
+                                <th><?= $lang->t('pet_mascot') ?></th>
+                                <th><?= $lang->t('pet_enabled') ?></th>
+                                <th><?= $lang->t('sound_enabled') ?></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($children as $child): ?>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <?php if ($child['photo_path']): ?>
+                                            <img src="<?= $baseUrl ?>/<?= htmlspecialchars($child['photo_path']) ?>" alt="" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                                        <?php else: ?>
+                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                <i class="bi bi-person text-muted"></i>
+                                            </div>
+                                        <?php endif; ?>
+                                        <span><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <?php
+                                    $styleKey = 'celebration_' . ($child['celebration_style'] ?? 'epic');
+                                    ?>
+                                    <span class="badge bg-light text-dark"><?= $lang->t($styleKey) ?></span>
+                                </td>
+                                <td>
+                                    <?php if ($child['pet_enabled']): ?>
+                                        <?php
+                                        $creature = $child['pet_creature'] ?? 'dragon';
+                                        $skin = $child['pet_skin'] ?? 'default';
+                                        $skinKey = 'skin_' . $skin;
+                                        ?>
+                                        <span class="badge" style="background: linear-gradient(135deg, var(--lavender) 0%, var(--accent-purple) 100%); color: white;">
+                                            <?= $lang->t($creature) ?> (<?= $lang->t($skinKey) ?>)
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-muted"><?= $lang->t('no_pet') ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($child['pet_enabled']): ?>
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    <?php else: ?>
+                                        <i class="bi bi-x-circle text-muted"></i>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($child['sound_enabled']): ?>
+                                        <i class="bi bi-volume-up-fill text-success"></i>
+                                    <?php else: ?>
+                                        <i class="bi bi-volume-mute text-muted"></i>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>/edit" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-currency-exchange me-2" style="color: var(--coral);"></i><?= $lang->t('currency_settings') ?></h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="<?= $baseUrl ?>/settings">
+                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+                    <div class="mb-4">
+                        <label class="form-label"><?= $lang->t('points_per_lari') ?></label>
+                        <input type="number" name="points_per_lari" class="form-control"
+                               value="<?= htmlspecialchars($settings['points_per_lari'] ?? '10') ?>" min="1">
+                        <small class="text-muted"><?= $lang->t('points_equal_currency') ?></small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label"><?= $lang->t('currency_symbol') ?></label>
+                        <input type="text" name="currency_symbol" class="form-control"
+                               value="<?= htmlspecialchars($settings['currency_symbol'] ?? '₾') ?>" maxlength="5">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label"><?= $lang->t('currency_name') ?></label>
+                        <input type="text" name="currency_name" class="form-control"
+                               value="<?= htmlspecialchars($settings['currency_name'] ?? 'Lari') ?>">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i><?= $lang->t('save') ?>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-translate me-2" style="color: var(--lavender);"></i><?= $lang->t('language') ?></h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4"><?= $lang->t('select_language') ?></p>
+
+                <div class="d-flex gap-3">
+                    <a href="<?= $baseUrl ?>/language/en"
+                       class="btn btn-lg flex-fill <?= $lang->getLocale() === 'en' ? 'btn-primary' : 'btn-outline-primary' ?>">
+                        <i class="bi bi-globe me-2"></i><?= $lang->t('english') ?>
+                    </a>
+                    <a href="<?= $baseUrl ?>/language/ka"
+                       class="btn btn-lg flex-fill <?= $lang->getLocale() === 'ka' ? 'btn-primary' : 'btn-outline-primary' ?>">
+                        <i class="bi bi-globe me-2"></i><?= $lang->t('georgian') ?>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-controller me-2" style="color: var(--accent-purple);"></i><?= $lang->t('child_portal_theme') ?></h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3"><?= $lang->t('theme_description') ?></p>
+                <form method="POST" action="<?= $baseUrl ?>/settings">
+                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                    <input type="hidden" name="points_per_lari" value="<?= htmlspecialchars($settings['points_per_lari'] ?? '10') ?>">
+                    <input type="hidden" name="currency_symbol" value="<?= htmlspecialchars($settings['currency_symbol'] ?? '₾') ?>">
+                    <input type="hidden" name="currency_name" value="<?= htmlspecialchars($settings['currency_name'] ?? 'Lari') ?>">
+
+                    <div class="d-flex gap-3">
+                        <div class="form-check flex-fill">
+                            <input class="form-check-input" type="radio" name="use_game_terms" id="modeStandard" value="0"
+                                   <?= ($settings['use_game_terms'] ?? '0') === '0' ? 'checked' : '' ?> onchange="this.form.submit()">
+                            <label class="form-check-label d-block p-3 border rounded cursor-pointer" for="modeStandard" style="cursor: pointer;">
+                                <i class="bi bi-book me-2"></i><strong><?= $lang->t('standard_mode') ?></strong>
+                                <div class="small text-muted mt-1"><?= $lang->t('theme_standard_terms') ?></div>
+                            </label>
+                        </div>
+                        <div class="form-check flex-fill">
+                            <input class="form-check-input" type="radio" name="use_game_terms" id="modeGame" value="1"
+                                   <?= ($settings['use_game_terms'] ?? '0') === '1' ? 'checked' : '' ?> onchange="this.form.submit()">
+                            <label class="form-check-label d-block p-3 border rounded cursor-pointer" for="modeGame" style="cursor: pointer;">
+                                <i class="bi bi-joystick me-2"></i><strong><?= $lang->t('game_mode') ?></strong>
+                                <div class="small text-muted mt-1"><?= $lang->t('theme_game_terms') ?></div>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-box2-heart me-2" style="color: #fbbf24;"></i><?= $lang->t('chest_settings') ?></h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="<?= $baseUrl ?>/settings">
+                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                    <input type="hidden" name="points_per_lari" value="<?= htmlspecialchars($settings['points_per_lari'] ?? '10') ?>">
+                    <input type="hidden" name="currency_symbol" value="<?= htmlspecialchars($settings['currency_symbol'] ?? '₾') ?>">
+                    <input type="hidden" name="currency_name" value="<?= htmlspecialchars($settings['currency_name'] ?? 'Lari') ?>">
+                    <input type="hidden" name="use_game_terms" value="<?= htmlspecialchars($settings['use_game_terms'] ?? '0') ?>">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="daily_chest_enabled" value="0">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="daily_chest_enabled" id="dailyChestEnabled" value="1"
+                                           <?= ($settings['daily_chest_enabled'] ?? '1') === '1' ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="dailyChestEnabled"><?= $lang->t('daily_chest_enabled') ?></label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><?= $lang->t('daily_chest_reward') ?></label>
+                                <input type="number" name="daily_chest_reward" class="form-control" min="0" max="1000"
+                                       value="<?= htmlspecialchars($settings['daily_chest_reward'] ?? '10') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="sunday_chest_enabled" value="0">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="sunday_chest_enabled" id="sundayChestEnabled" value="1"
+                                           <?= ($settings['sunday_chest_enabled'] ?? '1') === '1' ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="sundayChestEnabled"><?= $lang->t('sunday_chest_enabled') ?></label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><?= $lang->t('sunday_chest_reward') ?></label>
+                                <input type="number" name="sunday_chest_reward" class="form-control" min="0" max="1000"
+                                       value="<?= htmlspecialchars($settings['sunday_chest_reward'] ?? '25') ?>">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><?= $lang->t('sunday_chest_multiplier') ?></label>
+                                <select name="sunday_chest_multiplier" class="form-select">
+                                    <option value="0" <?= ($settings['sunday_chest_multiplier'] ?? '2') === '0' ? 'selected' : '' ?>>-</option>
+                                    <option value="1.5" <?= ($settings['sunday_chest_multiplier'] ?? '2') === '1.5' ? 'selected' : '' ?>>1.5x</option>
+                                    <option value="2" <?= ($settings['sunday_chest_multiplier'] ?? '2') === '2' ? 'selected' : '' ?>>2x</option>
+                                    <option value="3" <?= ($settings['sunday_chest_multiplier'] ?? '2') === '3' ? 'selected' : '' ?>>3x</option>
+                                    <option value="5" <?= ($settings['sunday_chest_multiplier'] ?? '2') === '5' ? 'selected' : '' ?>>5x</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i><?= $lang->t('save') ?>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2" style="color: var(--mint);"></i><?= $lang->t('about') ?></h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-star-fill me-2" style="font-size: 1.5rem; color: var(--gold);"></i>
+                    <span style="font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1.2rem;"><?= $lang->t('app_name') ?></span>
+                </div>
+                <p class="text-muted mb-0">
+                    <?= $lang->t('about_desc') ?>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

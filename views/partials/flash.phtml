@@ -1,0 +1,24 @@
+<?php if (isset($_SESSION['flash'])): ?>
+    <?php
+        $flash = $_SESSION['flash'];
+        $type = $flash['type'] ?? 'info';
+        $alertClass = match($type) {
+            'success' => 'alert-success',
+            'error', 'danger' => 'alert-danger',
+            'warning' => 'alert-warning',
+            default => 'alert-info',
+        };
+        $iconClass = match($type) {
+            'success' => 'bi-check-circle-fill',
+            'error', 'danger' => 'bi-exclamation-triangle-fill',
+            'warning' => 'bi-exclamation-circle-fill',
+            default => 'bi-info-circle-fill',
+        };
+    ?>
+    <div class="alert <?= $alertClass ?> alert-dismissible fade show d-flex align-items-center mb-4" role="alert" style="animation: fadeInUp 0.3s ease-out;">
+        <i class="bi <?= $iconClass ?> me-3" style="font-size: 1.25rem;"></i>
+        <div class="flex-grow-1"><?= htmlspecialchars($flash['message'] ?? '') ?></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php unset($_SESSION['flash']); ?>
+<?php endif; ?>

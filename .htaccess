@@ -1,0 +1,23 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Redirect root to public/index.php
+    RewriteRule ^$ public/index.php [L]
+
+    # Serve static files from public/ directly
+    RewriteCond %{REQUEST_URI} ^/assets/ [OR]
+    RewriteCond %{REQUEST_URI} ^/uploads/
+    RewriteRule ^(assets|uploads)/(.*)$ public/$1/$2 [L]
+
+    # Serve favicon from public/
+    RewriteRule ^favicon\.(svg|ico)$ public/favicon.$1 [L]
+
+    # Route everything else to public/index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/index.php?url=$1 [QSA,L]
+</IfModule>
+
+# Disable directory listing
+Options -Indexes

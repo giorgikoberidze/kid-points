@@ -1,0 +1,110 @@
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-trash3 me-2 text-danger"></i>
+                    <?= $lang->t('cleanup_data') ?> - <?= htmlspecialchars($child['nickname'] ?? $child['name']) ?>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <?= $lang->t('cleanup_warning') ?>
+                </div>
+
+                <form action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/cleanup" method="POST">
+                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+                    <div class="list-group mb-4">
+                        <label class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" name="clean_goals" value="1" class="form-check-input me-3">
+                                <div>
+                                    <i class="bi bi-bullseye me-2"></i><?= $lang->t('goals') ?>
+                                    <small class="d-block text-muted"><?= $lang->t('cleanup_goals_desc') ?></small>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary"><?= $counts['goals'] ?></span>
+                        </label>
+
+                        <label class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" name="clean_transactions" value="1" class="form-check-input me-3">
+                                <div>
+                                    <i class="bi bi-clock-history me-2"></i><?= $lang->t('transaction_history') ?>
+                                    <small class="d-block text-muted"><?= $lang->t('cleanup_transactions_desc') ?></small>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary"><?= $counts['transactions'] ?></span>
+                        </label>
+
+                        <label class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" name="clean_redemptions" value="1" class="form-check-input me-3">
+                                <div>
+                                    <i class="bi bi-gift me-2"></i><?= $lang->t('reward_redemptions') ?>
+                                    <small class="d-block text-muted"><?= $lang->t('cleanup_redemptions_desc') ?></small>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary"><?= $counts['redemptions'] ?></span>
+                        </label>
+
+                        <label class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" name="clean_streaks" value="1" class="form-check-input me-3">
+                                <div>
+                                    <i class="bi bi-fire me-2"></i><?= $lang->t('streaks') ?>
+                                    <small class="d-block text-muted"><?= $lang->t('cleanup_streaks_desc') ?></small>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary"><?= $counts['streaks'] ?></span>
+                        </label>
+
+                        <label class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" name="clean_achievements" value="1" class="form-check-input me-3">
+                                <div>
+                                    <i class="bi bi-trophy me-2"></i><?= $lang->t('achievements') ?>
+                                    <small class="d-block text-muted"><?= $lang->t('cleanup_achievements_desc') ?></small>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary"><?= $counts['achievements'] ?></span>
+                        </label>
+
+                        <label class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" name="clean_wishlist" value="1" class="form-check-input me-3">
+                                <div>
+                                    <i class="bi bi-heart me-2"></i><?= $lang->t('wishlist') ?>
+                                    <small class="d-block text-muted"><?= $lang->t('cleanup_wishlist_desc') ?></small>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary"><?= $counts['wishlist'] ?></span>
+                        </label>
+
+                        <label class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" name="clean_activity" value="1" class="form-check-input me-3">
+                                <div>
+                                    <i class="bi bi-activity me-2"></i><?= $lang->t('activity_log') ?>
+                                    <small class="d-block text-muted"><?= $lang->t('cleanup_activity_desc') ?></small>
+                                </div>
+                            </div>
+                            <span class="badge bg-secondary"><?= $counts['activity'] ?></span>
+                        </label>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-1"></i><?= $lang->t('cancel') ?>
+                        </a>
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('<?= $lang->t('confirm_cleanup') ?>');">
+                            <i class="bi bi-trash3 me-1"></i><?= $lang->t('cleanup_selected') ?>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

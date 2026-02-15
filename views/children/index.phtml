@@ -1,0 +1,120 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><?= $lang->t('children') ?></h2>
+        <p class="text-muted mb-0"><?= count($children) ?> <?= $lang->t('total_children') ?></p>
+    </div>
+    <a href="<?= $baseUrl ?>/children/create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i><?= $lang->t('add_child') ?>
+    </a>
+</div>
+
+<?php if (empty($children)): ?>
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="mb-4">
+                <i class="bi bi-people" style="font-size: 4rem; color: var(--coral); opacity: 0.5;"></i>
+            </div>
+            <h4><?= $lang->t('no_children') ?></h4>
+            <p class="text-muted mb-4"><?= $lang->t('get_started_add_child') ?></p>
+            <a href="<?= $baseUrl ?>/children/create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i><?= $lang->t('add_child') ?>
+            </a>
+        </div>
+    </div>
+<?php else: ?>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th><?= $lang->t('photo') ?></th>
+                    <th><?= $lang->t('nickname') ?></th>
+                    <th><?= $lang->t('date_of_birth') ?></th>
+                    <th><?= $lang->t('points_balance') ?></th>
+                    <th><?= $lang->t('positivity') ?></th>
+                    <th class="text-end"><?= $lang->t('actions') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($children as $child): ?>
+                <tr class="clickable-row" data-href="<?= $baseUrl ?>/children/<?= $child['id'] ?>" style="cursor: pointer;">
+                    <td>
+                        <?php if ($child['photo_path']): ?>
+                            <img src="<?= $baseUrl ?>/<?= htmlspecialchars($child['photo_path']) ?>"
+                                 width="48" height="48"
+                                 class="rounded-circle"
+                                 style="object-fit: cover; border: 3px solid var(--cream-dark);">
+                        <?php else: ?>
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                                 style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--coral), var(--lavender)); color: #fff; font-size: 1.2rem;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <span class="fw-bold" style="font-size: 1.05rem;"><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></span>
+                        <?php if (!empty($child['first_name']) || !empty($child['last_name'])): ?>
+                            <small class="d-block text-muted"><?= htmlspecialchars(trim(($child['first_name'] ?? '') . ' ' . ($child['last_name'] ?? ''))) ?></small>
+                        <?php endif; ?>
+                    </td>
+                    <td class="text-muted">
+                        <?php if ($child['date_of_birth']): ?>
+                            <?= date('M j, Y', strtotime($child['date_of_birth'])) ?>
+                        <?php else: ?>
+                            -
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <span class="<?= $child['points_balance'] >= 0 ? 'points-positive' : 'points-negative' ?> fw-bold" style="font-size: 1.1rem;">
+                            <?= $child['points_balance'] ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if (isset($positivityStats[$child['id']])): ?>
+                            <?php
+                            $positivity = $positivityStats[$child['id']];
+                            $size = 'sm';
+                            $showLabel = false;
+                            $showTooltip = true;
+                            include __DIR__ . '/../partials/positivity-badge.phtml';
+                            ?>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>" class="btn btn-sm btn-outline-primary" title="<?= $lang->t('view_profile') ?>">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>/edit" class="btn btn-sm btn-outline-secondary" title="<?= $lang->t('edit') ?>">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/delete" class="d-inline">
+                                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                                <button class="btn btn-sm btn-outline-danger" data-confirm="<?= $lang->t('confirm_delete') ?>" title="<?= $lang->t('delete') ?>">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            <button class="btn btn-sm btn-outline-info" data-copy="<?= rtrim($_SERVER['HTTP_HOST'] . $baseUrl, '/') ?>/children/<?= $child['id'] ?>/public" title="<?= $lang->t('public_link') ?>">
+                                <i class="bi bi-link-45deg"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.clickable-row').forEach(row => {
+    row.addEventListener('click', function(e) {
+        // Don't navigate if clicking on actions column (last td) or interactive elements
+        if (e.target.closest('td:last-child') || e.target.closest('a, button, form')) {
+            return;
+        }
+        window.location.href = this.dataset.href;
+    });
+});
+</script>
+<?php endif; ?>

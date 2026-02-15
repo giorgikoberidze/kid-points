@@ -1,0 +1,259 @@
+<div class="mb-4">
+    <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>" class="text-muted text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i><?= $lang->t('back') ?? 'Back' ?>
+    </a>
+</div>
+
+<h2 class="mb-4"><?= $lang->t('edit_child') ?></h2>
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-body">
+        <form method="POST" action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/update" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('nickname') ?> *</label>
+                <input type="text" name="nickname" class="form-control" value="<?= htmlspecialchars($child['nickname'] ?? $child['name']) ?>" required>
+                <small class="text-muted"><?= $lang->t('name_hint') ?></small>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><?= $lang->t('first_name') ?></label>
+                    <input type="text" name="first_name" class="form-control" value="<?= htmlspecialchars($child['first_name'] ?? '') ?>">
+                </div>
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><?= $lang->t('last_name') ?></label>
+                    <input type="text" name="last_name" class="form-control" value="<?= htmlspecialchars($child['last_name'] ?? '') ?>">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('pin_code') ?></label>
+                <input type="text" name="pin" class="form-control" pattern="[0-9]{4}" maxlength="4" minlength="4" inputmode="numeric" style="max-width: 120px;" placeholder="0000" value="<?= htmlspecialchars($child['pin'] ?? '') ?>">
+                <small class="text-muted"><?= $lang->t('pin_hint') ?></small>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('date_of_birth') ?></label>
+                <input type="date" name="date_of_birth" class="form-control" value="<?= $child['date_of_birth'] ?? '' ?>">
+            </div>
+
+            <?php if ($child['photo_path']): ?>
+            <div class="mb-4">
+                <label class="form-label">Current Photo</label>
+                <div>
+                    <img src="<?= $baseUrl ?>/<?= htmlspecialchars($child['photo_path']) ?>"
+                         class="rounded-circle"
+                         width="100" height="100"
+                         style="object-fit: cover; border: 3px solid var(--cream-dark);">
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('photo') ?></label>
+                <input type="file" name="photo" class="form-control" accept="image/*">
+                <small class="text-muted"><?= $child['photo_path'] ? $lang->t('photo_upload_replace') : $lang->t('photo_upload_optional') ?></small>
+            </div>
+
+            <hr class="my-4">
+            <h5 class="mb-3"><i class="bi bi-controller me-2"></i><?= $lang->t('gamification_settings') ?></h5>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('celebration_style') ?></label>
+                <select name="celebration_style" class="form-select">
+                    <option value="simple" <?= ($child['celebration_style'] ?? 'simple') === 'simple' ? 'selected' : '' ?>>
+                        <?= $lang->t('celebration_simple') ?> - <?= $lang->t('celebration_simple_desc') ?>
+                    </option>
+                    <option value="medium" <?= ($child['celebration_style'] ?? '') === 'medium' ? 'selected' : '' ?>>
+                        <?= $lang->t('celebration_medium') ?> - <?= $lang->t('celebration_medium_desc') ?>
+                    </option>
+                    <option value="dramatic" <?= ($child['celebration_style'] ?? '') === 'dramatic' ? 'selected' : '' ?>>
+                        <?= $lang->t('celebration_dramatic') ?> - <?= $lang->t('celebration_dramatic_desc') ?>
+                    </option>
+                    <option value="epic" <?= ($child['celebration_style'] ?? '') === 'epic' ? 'selected' : '' ?>>
+                        <?= $lang->t('celebration_epic') ?> - <?= $lang->t('celebration_epic_desc') ?>
+                    </option>
+                </select>
+            </div>
+
+            <!-- Pet Preview Section -->
+            <div class="mb-4 p-3 rounded" style="background: linear-gradient(135deg, #f0f4ff 0%, #fce7f3 100%); border: 2px dashed var(--accent-primary);">
+                <label class="form-label fw-bold"><i class="bi bi-eye me-2"></i><?= $lang->t('pet_preview') ?? 'Pet Preview' ?></label>
+                <div class="d-flex align-items-center gap-4">
+                    <div id="petPreviewContainer" style="width: 120px; height: 140px; position: relative;">
+                        <!-- Preview will be rendered here -->
+                    </div>
+                    <div class="text-muted small">
+                        <p class="mb-1"><?= $lang->t('pet_preview_hint') ?? 'This is how the pet companion will look in the child portal.' ?></p>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="triggerPreviewAnimation()">
+                            <i class="bi bi-play-fill me-1"></i><?= $lang->t('test_animation') ?? 'Test Animation' ?>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><?= $lang->t('pet_creature') ?></label>
+                    <select name="pet_creature" id="petCreatureSelect" class="form-select">
+                        <option value="dragon" <?= ($child['pet_creature'] ?? 'dragon') === 'dragon' ? 'selected' : '' ?>><?= $lang->t('dragon') ?? 'Dragon' ?></option>
+                        <option value="unicorn" <?= ($child['pet_creature'] ?? '') === 'unicorn' ? 'selected' : '' ?>><?= $lang->t('unicorn') ?? 'Unicorn' ?></option>
+                        <option value="phoenix" <?= ($child['pet_creature'] ?? '') === 'phoenix' ? 'selected' : '' ?>><?= $lang->t('phoenix') ?? 'Phoenix' ?></option>
+                        <option value="cat" <?= ($child['pet_creature'] ?? '') === 'cat' ? 'selected' : '' ?>><?= $lang->t('cat') ?? 'Cat' ?></option>
+                        <option value="owl" <?= ($child['pet_creature'] ?? '') === 'owl' ? 'selected' : '' ?>><?= $lang->t('owl') ?? 'Owl' ?></option>
+                        <option value="bunny" <?= ($child['pet_creature'] ?? '') === 'bunny' ? 'selected' : '' ?>><?= $lang->t('bunny') ?? 'Bunny' ?></option>
+                        <option value="fox" <?= ($child['pet_creature'] ?? '') === 'fox' ? 'selected' : '' ?>><?= $lang->t('fox') ?? 'Fox' ?></option>
+                        <option value="panda" <?= ($child['pet_creature'] ?? '') === 'panda' ? 'selected' : '' ?>><?= $lang->t('panda') ?? 'Panda' ?></option>
+                        <option value="penguin" <?= ($child['pet_creature'] ?? '') === 'penguin' ? 'selected' : '' ?>><?= $lang->t('penguin') ?? 'Penguin' ?></option>
+                        <option value="butterfly" <?= ($child['pet_creature'] ?? '') === 'butterfly' ? 'selected' : '' ?>><?= $lang->t('butterfly') ?? 'Butterfly' ?></option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><?= $lang->t('pet_skin') ?></label>
+                    <select name="pet_skin" id="petSkinSelect" class="form-select">
+                        <option value="default" <?= ($child['pet_skin'] ?? 'default') === 'default' ? 'selected' : '' ?>><?= $lang->t('skin_default') ?? 'Purple (Default)' ?></option>
+                        <option value="pink" <?= ($child['pet_skin'] ?? '') === 'pink' ? 'selected' : '' ?>><?= $lang->t('skin_pink') ?? 'Pink' ?></option>
+                        <option value="blue" <?= ($child['pet_skin'] ?? '') === 'blue' ? 'selected' : '' ?>><?= $lang->t('skin_blue') ?? 'Blue' ?></option>
+                        <option value="gold" <?= ($child['pet_skin'] ?? '') === 'gold' ? 'selected' : '' ?>><?= $lang->t('skin_gold') ?? 'Gold' ?></option>
+                        <option value="purple" <?= ($child['pet_skin'] ?? '') === 'purple' ? 'selected' : '' ?>><?= $lang->t('skin_purple') ?? 'Purple' ?></option>
+                        <option value="green" <?= ($child['pet_skin'] ?? '') === 'green' ? 'selected' : '' ?>><?= $lang->t('skin_green') ?? 'Green' ?></option>
+                        <option value="red" <?= ($child['pet_skin'] ?? '') === 'red' ? 'selected' : '' ?>><?= $lang->t('skin_red') ?? 'Red' ?></option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="form-check form-switch">
+                        <input type="hidden" name="pet_enabled" value="0">
+                        <input class="form-check-input" type="checkbox" role="switch" name="pet_enabled" id="petEnabled" value="1" <?= ($child['pet_enabled'] ?? 1) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="petEnabled"><?= $lang->t('pet_enabled') ?></label>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="form-check form-switch">
+                        <input type="hidden" name="sound_enabled" value="0">
+                        <input class="form-check-input" type="checkbox" role="switch" name="sound_enabled" id="soundEnabled" value="1" <?= ($child['sound_enabled'] ?? 1) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="soundEnabled"><?= $lang->t('sound_enabled') ?></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i><?= $lang->t('save') ?>
+                </button>
+                <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>" class="btn btn-outline-secondary">
+                    <?= $lang->t('cancel') ?>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="<?= $baseUrl ?>/assets/js/pet-mascot.js"></script>
+<script>
+// Pet Preview System
+const skinColors = {
+    default: { primary: '#8b5cf6', secondary: '#a78bfa', accent: '#c4b5fd', eye: '#1e1b4b' },
+    pink: { primary: '#ec4899', secondary: '#f472b6', accent: '#fbcfe8', eye: '#831843' },
+    blue: { primary: '#3b82f6', secondary: '#60a5fa', accent: '#bfdbfe', eye: '#1e3a8a' },
+    gold: { primary: '#f59e0b', secondary: '#fbbf24', accent: '#fde68a', eye: '#78350f' },
+    purple: { primary: '#8b5cf6', secondary: '#a78bfa', accent: '#ddd6fe', eye: '#4c1d95' },
+    green: { primary: '#10b981', secondary: '#34d399', accent: '#a7f3d0', eye: '#064e3b' },
+    red: { primary: '#ef4444', secondary: '#f87171', accent: '#fecaca', eye: '#7f1d1d' }
+};
+
+let previewPet = null;
+
+function updatePreview() {
+    const creature = document.getElementById('petCreatureSelect').value;
+    const skin = document.getElementById('petSkinSelect').value;
+    const container = document.getElementById('petPreviewContainer');
+
+    if (!container) return;
+
+    const colors = skinColors[skin] || skinColors.default;
+
+    // Create a temporary PetMascot instance just to get the SVG
+    const tempPet = new PetMascot({ creature, skin, enabled: false });
+    const svgContent = tempPet.getCreatureSVG(creature, colors);
+    tempPet.destroy();
+
+    container.innerHTML = `
+        <div class="pet-creature" style="width: 100%; height: 100%;">
+            <div class="pet-shadow" style="position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 60px; height: 12px; background: radial-gradient(ellipse, rgba(0,0,0,0.15) 0%, transparent 70%);"></div>
+            <div class="pet-body" id="previewPetBody" data-state="idle" style="position: relative; width: 100%; height: 100%; animation: petFloat 2s ease-in-out infinite;">
+                ${svgContent}
+            </div>
+        </div>
+    `;
+}
+
+function triggerPreviewAnimation() {
+    const body = document.getElementById('previewPetBody');
+    if (!body) return;
+
+    // Cycle through some animations
+    const animations = ['petJump', 'petWiggle', 'petSpin360', 'petBounce'];
+    const anim = animations[Math.floor(Math.random() * animations.length)];
+
+    body.style.animation = `${anim} 0.6s ease`;
+    setTimeout(() => {
+        body.style.animation = 'petFloat 2s ease-in-out infinite';
+    }, 700);
+}
+
+// Initialize preview on load
+document.addEventListener('DOMContentLoaded', function() {
+    updatePreview();
+
+    // Update preview when creature or skin changes
+    document.getElementById('petCreatureSelect').addEventListener('change', updatePreview);
+    document.getElementById('petSkinSelect').addEventListener('change', updatePreview);
+});
+</script>
+
+<style>
+@keyframes petFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes petJump {
+    0% { transform: translateY(0) scaleX(1) scaleY(1); }
+    15% { transform: translateY(5px) scaleX(1.15) scaleY(0.85); }
+    30% { transform: translateY(-35px) scaleX(0.9) scaleY(1.15); }
+    50% { transform: translateY(-45px) scaleX(0.95) scaleY(1.05); }
+    70% { transform: translateY(-25px) scaleX(1) scaleY(1); }
+    85% { transform: translateY(3px) scaleX(1.1) scaleY(0.9); }
+    100% { transform: translateY(0) scaleX(1) scaleY(1); }
+}
+
+@keyframes petWiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-8deg); }
+    75% { transform: rotate(8deg); }
+}
+
+@keyframes petSpin360 {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes petBounce {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    30% { transform: translateY(-20px) scaleY(1.1); }
+    50% { transform: translateY(-25px) scaleY(1.05); }
+    70% { transform: translateY(-15px) scaleY(1); }
+    85% { transform: translateY(3px) scaleY(0.95); }
+}
+
+#petPreviewContainer .pet-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+</style>

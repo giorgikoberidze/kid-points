@@ -1,0 +1,407 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+$descField = $locale === 'ka' ? 'description_ka' : 'description';
+$useGameTerms = ($settings['use_game_terms'] ?? '0') === '1';
+
+// Helper function for terminology
+$term = function($standard, $game) use ($useGameTerms, $lang) {
+    $key = $useGameTerms ? $game : $standard;
+    return $lang->t($key);
+};
+
+$pointsLabel = $useGameTerms ? $lang->t('points_game') : $lang->t('points');
+$ptsLabel = $useGameTerms ? $lang->t('pts_game') : $lang->t('pts');
+?>
+
+<?php if (!empty($completedGoals)): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    <?php foreach ($completedGoals as $cg): ?>
+    if (window.gameCelebration) {
+        <?php if (!empty($cg['chest_reward'])): ?>
+        // Show goal chest animation with reward
+        window.gameCelebration.showGoalChest({
+            goal: {
+                name: <?= json_encode($cg[$nameField] ?? $cg['name']) ?>,
+                target_points: <?= $cg['target_points'] ?>
+            },
+            chest: {
+                type: <?= json_encode($cg['chest_reward']['chest_type']) ?>,
+                xp_reward: <?= $cg['chest_reward']['xp_reward'] ?? 0 ?>,
+                multiplier_reward: <?= $cg['chest_reward']['multiplier_reward'] ?? 0 ?>
+            }
+        }, {
+            congratulations: <?= json_encode($lang->t('congratulations')) ?>,
+            goal_completed: <?= json_encode($useGameTerms ? $lang->t('goal_completed_game') : $lang->t('goal_completed')) ?>,
+            goal_chest_opened: <?= json_encode($lang->t('goal_chest_opened')) ?>,
+            multiplier_24h: <?= json_encode($lang->t('multiplier_24h')) ?>
+        });
+        <?php else: ?>
+        // Simple goal completion (no chest)
+        window.gameCelebration.showGoalComplete({
+            name: <?= json_encode($cg[$nameField] ?? $cg['name']) ?>
+        }, {
+            congratulations: <?= json_encode($lang->t('congratulations')) ?>,
+            goal_completed: <?= json_encode($useGameTerms ? $lang->t('goal_completed_game') : $lang->t('goal_completed')) ?>
+        });
+        <?php endif; ?>
+    }
+    <?php endforeach; ?>
+});
+</script>
+<?php endif; ?>
+
+<?php
+// Include treasure chest modal if available (daily/sunday)
+if (!empty($availableChest)):
+    $chest = $availableChest;
+    include __DIR__ . '/partials/chest-modal.phtml';
+endif;
+
+// Include pending bonus chests
+if (!empty($pendingChests)):
+    include __DIR__ . '/partials/pending-chests.phtml';
+endif;
+?>
+
+<!-- Player Card Hero -->
+<div class="player-card">
+    <div class="player-card-bg"></div>
+    <div class="player-card-content">
+        <!-- Avatar with animated ring -->
+        <div class="avatar-ring">
+            <?php if ($child['photo_path']): ?>
+                <img src="<?= $baseUrl ?>/<?= htmlspecialchars($child['photo_path']) ?>"
+                     class="player-avatar"
+                     alt="<?= htmlspecialchars($child['nickname'] ?? $child['name']) ?>">
+            <?php else: ?>
+                <div class="avatar-placeholder">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+            <?php endif; ?>
+            <?php if (!empty($levelProgress['current_level'])): ?>
+            <div class="level-badge-floating">
+                <?= $levelProgress['current_level']['icon'] ?? '🌱' ?>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Player name -->
+        <h2 class="player-name"><?= $lang->t('hello') ?>, <?= htmlspecialchars($child['nickname'] ?? $child['name']) ?>!</h2>
+
+        <!-- Level badge with stars -->
+        <?php if (!empty($levelProgress['current_level'])): ?>
+        <div class="player-rank">
+            <span class="rank-name"><?= htmlspecialchars($locale === 'ka' ? ($levelProgress['current_level']['name_ka'] ?? $levelProgress['current_level']['name']) : $levelProgress['current_level']['name']) ?></span>
+            <div class="rank-stars">
+                <?php for ($i = 0; $i < ($levelProgress['current_level']['stars'] ?? 1); $i++): ?>
+                    <i class="bi bi-star-fill star"></i>
+                <?php endfor; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- XP Bar -->
+        <?php if (!empty($levelProgress['current_level']) && !empty($levelProgress['next_level'])): ?>
+        <div class="xp-bar-container">
+            <div class="xp-bar-track">
+                <div class="xp-bar-fill" style="width: <?= $levelProgress['progress_percentage'] ?? 0 ?>%">
+                    <div class="xp-bar-shimmer"></div>
+                    <div class="xp-bar-glow"></div>
+                </div>
+            </div>
+            <div class="xp-bar-labels">
+                <span class="xp-current"><?= number_format($levelProgress['total_earned'] ?? 0) ?> <?= $ptsLabel ?></span>
+                <span class="xp-next"><?= number_format($levelProgress['next_level']['points_required'] ?? 0) ?> <?= $ptsLabel ?></span>
+            </div>
+        </div>
+        <?php elseif (!empty($levelProgress['current_level'])): ?>
+        <div class="text-muted small mt-2">
+            <i class="bi bi-trophy-fill me-1" style="color: #fbbf24;"></i>
+            <?= $lang->t('max_level_reached') ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Currency Display (Points Balance) -->
+        <div class="currency-display">
+            <div class="currency-coin">
+                <i class="ph-fill ph-coin"></i>
+            </div>
+            <span class="currency-amount" data-count="<?= abs($child['points_balance']) ?>" data-points-balance="true">
+                <?= number_format($child['points_balance']) ?>
+            </span>
+            <span class="currency-label"><?= $ptsLabel ?></span>
+        </div>
+
+        <div class="text-muted small mt-2">
+            = <?= $currencySymbol ?><?= number_format($child['points_balance'] / max(1, $pointsPerLari), 2) ?>
+        </div>
+
+        <?php if (!empty($activeMultiplier)): ?>
+        <div class="multiplier-active-indicator mt-3">
+            <i class="bi bi-lightning-charge-fill"></i>
+            <span><?= $activeMultiplier['multiplier'] ?>x <?= $lang->t('multiplier_active') ?></span>
+            <small>(<?= ceil($activeMultiplier['hours_remaining']) ?> <?= $lang->t('hours_remaining') ?>)</small>
+        </div>
+        <?php endif; ?>
+
+        <?php if (isset($positivity)): ?>
+        <div class="mt-3">
+            <?php $size = 'md'; $showLabel = true; $showTooltip = true; include __DIR__ . '/../partials/positivity-badge.phtml'; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<!-- Stats Panel (Weekly Summary) -->
+<div class="stats-panel">
+    <div class="stats-panel-header">
+        <i class="ph-fill ph-chart-line-up"></i>
+        <h6><?= $useGameTerms ? $lang->t('this_week_game') : $lang->t('this_week') ?></h6>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-item stat-earned">
+            <div class="stat-icon">
+                <i class="ph-fill ph-arrow-fat-up"></i>
+            </div>
+            <div class="stat-value" data-count="<?= $weeklySummary['this_week']['earned'] ?>" data-prefix="+">
+                +<?= $weeklySummary['this_week']['earned'] ?>
+            </div>
+            <div class="stat-label"><?= $useGameTerms ? $lang->t('earned_game') : $lang->t('earned') ?></div>
+            <?php if ($weeklySummary['comparison']['earned_trend'] === 'up'): ?>
+            <div class="stat-trend trend-up">
+                <i class="ph ph-trend-up"></i> +<?= abs($weeklySummary['comparison']['earned_change']) ?>
+            </div>
+            <?php elseif ($weeklySummary['comparison']['earned_trend'] === 'down'): ?>
+            <div class="stat-trend trend-down">
+                <i class="ph ph-trend-down"></i> -<?= abs($weeklySummary['comparison']['earned_change']) ?>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="stat-item stat-spent">
+            <div class="stat-icon">
+                <i class="ph-fill ph-shopping-cart"></i>
+            </div>
+            <div class="stat-value">-<?= $weeklySummary['this_week']['spent'] ?></div>
+            <div class="stat-label"><?= $useGameTerms ? $lang->t('spent_game') : $lang->t('spent') ?></div>
+        </div>
+
+        <div class="stat-item stat-net">
+            <div class="stat-icon">
+                <i class="ph-fill ph-scales"></i>
+            </div>
+            <div class="stat-value <?= $weeklySummary['this_week']['net'] >= 0 ? 'points-positive' : 'points-negative' ?>">
+                <?= $weeklySummary['this_week']['net'] >= 0 ? '+' : '' ?><?= $weeklySummary['this_week']['net'] ?>
+            </div>
+            <div class="stat-label"><?= $lang->t('net') ?></div>
+        </div>
+    </div>
+    <?php if ($weeklySummary['best_day']): ?>
+    <div class="text-center py-3 border-top" style="background: var(--bg-secondary);">
+        <small class="text-muted">
+            <i class="bi bi-trophy me-1" style="color: #fbbf24;"></i>
+            <?= $useGameTerms ? $lang->t('best_day_game') : $lang->t('best_day') ?>: <?= $lang->t($weeklySummary['best_day']['day_key']) ?>
+            (+<?= $weeklySummary['best_day']['earned'] ?> <?= $ptsLabel ?>)
+        </small>
+    </div>
+    <?php endif; ?>
+</div>
+
+<!-- Mission Preview (Primary Goal) -->
+<?php if ($primaryGoal && $goalProgress): ?>
+<div class="mission-card <?= $goalProgress['percentage'] >= 100 ? 'mission-complete' : '' ?>">
+    <div class="mission-content">
+        <div class="mission-header">
+            <?php if ($primaryGoal['is_favorite']): ?>
+            <div class="mission-star active">
+                <i class="bi bi-star-fill"></i>
+            </div>
+            <?php endif; ?>
+            <h6 class="mission-name"><?= htmlspecialchars($primaryGoal[$nameField] ?? $primaryGoal['name']) ?></h6>
+            <span class="mission-badge"><?= round($goalProgress['percentage']) ?>%</span>
+        </div>
+
+        <div class="mission-progress-track">
+            <div class="mission-progress-fill" style="width: <?= min(100, $goalProgress['percentage']) ?>%"></div>
+            <div class="milestone-markers">
+                <span class="milestone" style="left: 25%"></span>
+                <span class="milestone" style="left: 50%"></span>
+                <span class="milestone" style="left: 75%"></span>
+                <span class="milestone milestone-end" style="left: 100%">
+                    <i class="ph-fill ph-flag"></i>
+                </span>
+            </div>
+        </div>
+
+        <div class="mission-footer">
+            <span class="mission-points">
+                <?= number_format($child['points_balance']) ?> / <?= number_format($goalProgress['points_target']) ?> <?= $ptsLabel ?>
+            </span>
+            <?php if (!empty($primaryGoal['deadline'])): ?>
+            <span class="mission-deadline <?= $goalProgress['is_overdue'] ? 'overdue' : ($goalProgress['days_until_deadline'] <= 3 ? 'urgent' : '') ?>">
+                <i class="ph ph-clock"></i>
+                <?php if ($goalProgress['is_overdue']): ?>
+                    <?= $lang->t('overdue') ?>
+                <?php else: ?>
+                    <?= $goalProgress['days_until_deadline'] ?> <?= $lang->t('days_remaining') ?>
+                <?php endif; ?>
+            </span>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($milestoneMessage): ?>
+        <div class="milestone-badge mt-3">
+            <i class="bi bi-star-fill me-1"></i> <?= $milestoneMessage ?>
+        </div>
+        <?php endif; ?>
+
+        <div class="mt-3 text-center">
+            <a href="<?= $baseUrl ?>/my/goals" class="btn btn-sm btn-outline-primary btn-game">
+                <i class="ph ph-list-checks me-1"></i>
+                <?= $useGameTerms ? $lang->t('goals_game') : $lang->t('manage') ?>
+            </a>
+        </div>
+    </div>
+</div>
+<?php else: ?>
+<div class="mission-card" style="opacity: 0.8;">
+    <div class="mission-content text-center py-4">
+        <i class="ph-fill ph-flag-checkered" style="font-size: 3rem; color: var(--accent-info); opacity: 0.5;"></i>
+        <p class="text-muted mt-2 mb-3">
+            <?= $useGameTerms ? $lang->t('no_goal_set_game') : $lang->t('no_goal_set') ?>
+        </p>
+        <a href="<?= $baseUrl ?>/my/goals" class="btn btn-primary btn-game">
+            <i class="ph ph-plus me-1"></i>
+            <?= $useGameTerms ? $lang->t('create_goal_game') : $lang->t('create_goal') ?>
+        </a>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Streaks -->
+<?php if (!empty($streaks)): ?>
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="ph-fill ph-flame" style="color: #f97316;"></i>
+            <span class="ms-2"><?= $lang->t('streaks') ?></span>
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="d-flex flex-wrap gap-2">
+            <?php foreach ($streaks as $s): ?>
+                <span class="streak-badge-game">
+                    <span class="streak-fire">🔥</span>
+                    <span><?= htmlspecialchars($locale === 'ka' && !empty($s['category_name_ka']) ? $s['category_name_ka'] : $s['category_name']) ?></span>
+                    <span class="streak-count"><?= $s['current_count'] ?></span>
+                    <span><?= $lang->t('days') ?></span>
+                </span>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Trophy Case (Achievements) -->
+<?php if (!empty($achievements)): ?>
+<div class="trophy-case">
+    <div class="trophy-case-header">
+        <i class="ph-fill ph-trophy"></i>
+        <h6><?= $lang->t('trophy_case') ?></h6>
+        <span class="trophy-count"><?= count($achievements) ?></span>
+    </div>
+    <div class="trophy-grid">
+        <?php foreach ($achievements as $a): ?>
+        <div class="trophy-item unlocked" title="<?= htmlspecialchars($a[$descField] ?? $a['description'] ?? '') ?>">
+            <div class="trophy-icon-wrapper">
+                <div class="trophy-glow"></div>
+                <i class="bi <?= $a['icon'] ?>"></i>
+            </div>
+            <span class="trophy-name"><?= htmlspecialchars($a[$nameField] ?? $a['name']) ?></span>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Recent Redemptions -->
+<?php if (!empty($redemptions)): ?>
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="ph-fill ph-package" style="color: var(--accent-purple);"></i>
+            <span class="ms-2"><?= $useGameTerms ? $lang->t('my_rewards_game') : $lang->t('my_rewards') ?></span>
+        </h6>
+        <a href="<?= $baseUrl ?>/my/redemption-history" class="btn btn-sm btn-outline-secondary"><?= $lang->t('view_all') ?></a>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            <?php foreach (array_slice($redemptions, 0, 3) as $rd): ?>
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi <?= $rd['reward_icon'] ?? 'bi-gift' ?> me-2" style="color: var(--accent-purple);"></i>
+                    <?= htmlspecialchars($locale === 'ka' && !empty($rd['reward_name_ka']) ? $rd['reward_name_ka'] : $rd['reward_name']) ?>
+                </div>
+                <span class="badge bg-<?= $rd['status'] === 'fulfilled' ? 'success' : ($rd['status'] === 'pending' ? 'warning' : 'secondary') ?>">
+                    <?= $lang->t($rd['status']) ?>
+                </span>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Recent Transactions -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="ph-fill ph-clock-counter-clockwise"></i>
+            <span class="ms-2"><?= $useGameTerms ? $lang->t('recent_activity_game') : $lang->t('recent_activity') ?></span>
+        </h6>
+        <a href="<?= $baseUrl ?>/my/points-history" class="btn btn-sm btn-outline-secondary"><?= $lang->t('view_all') ?></a>
+    </div>
+    <?php if (empty($transactions)): ?>
+        <div class="card-body text-center text-muted py-4">
+            <i class="ph ph-tray" style="font-size: 2rem; opacity: 0.5;"></i>
+            <p class="mb-0 mt-2"><?= $lang->t('no_transactions') ?></p>
+        </div>
+    <?php else: ?>
+        <div class="list-group list-group-flush">
+            <?php foreach ($transactions as $tx): ?>
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <?php if (!empty($tx['category_icon'])): ?>
+                            <i class="bi <?= $tx['category_icon'] ?> me-2"></i>
+                        <?php else: ?>
+                            <i class="ph ph-arrows-left-right me-2"></i>
+                        <?php endif; ?>
+                        <span><?= htmlspecialchars($locale === 'ka' && !empty($tx['category_name_ka']) ? $tx['category_name_ka'] : ($tx['category_name'] ?? $lang->t('adjustment'))) ?></span>
+                        <small class="text-muted d-block d-md-inline ms-md-2"><?= $lang->formatDate($tx['transaction_date'], 'month_day') ?></small>
+                    </div>
+                    <span class="<?= $tx['points'] >= 0 ? 'points-positive' : 'points-negative' ?> fw-bold">
+                        <?= ($tx['points'] >= 0 ? '+' : '') . $tx['points'] ?>
+                    </span>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
+<?php if (!empty($levelUp)): ?>
+<!-- Level-up Celebration -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.gameCelebration) {
+        window.gameCelebration.showLevelUp(<?= json_encode($levelUp) ?>, {
+            level_up: <?= json_encode($lang->t('level_up')) ?>,
+            reached_level: <?= json_encode($lang->t('reached_level')) ?>,
+            bonus_points: <?= json_encode($lang->t('bonus_points')) ?>,
+            awesome: <?= json_encode($lang->t('awesome')) ?>
+        });
+    }
+});
+</script>
+<?php endif; ?>

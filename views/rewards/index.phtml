@@ -1,0 +1,166 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+$descField = $locale === 'ka' ? 'description_ka' : 'description';
+?>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><?= $lang->t('rewards') ?></h2>
+        <p class="text-muted mb-0"><?= $lang->t('rewards_manage_desc') ?></p>
+    </div>
+    <a href="<?= $baseUrl ?>/rewards/create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i><?= $lang->t('add_reward') ?>
+    </a>
+</div>
+
+<!-- Rewards Table -->
+<div class="card mb-5">
+    <div class="table-responsive">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th><?= $lang->t('icon') ?></th>
+                    <th><?= $lang->t('reward_name') ?></th>
+                    <th><?= $lang->t('description') ?></th>
+                    <th><?= $lang->t('point_cost') ?></th>
+                    <th><?= $lang->t('money_value') ?></th>
+                    <th><?= $lang->t('active') ?></th>
+                    <th class="text-end"><?= $lang->t('actions') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if (empty($rewards)): ?>
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-gift" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <p class="mb-0 mt-2"><?= $lang->t('no_rewards_yet') ?></p>
+                    </td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($rewards as $r): ?>
+                <tr>
+                    <td>
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                              style="width: 40px; height: 40px; background: var(--mint-light);">
+                            <i class="bi <?= htmlspecialchars($r['icon']) ?>" style="font-size: 1.2rem; color: var(--mint);"></i>
+                        </span>
+                    </td>
+                    <td class="fw-bold"><?= htmlspecialchars($r[$nameField] ?? $r['name']) ?></td>
+                    <td class="text-muted"><?= htmlspecialchars($r[$descField] ?? $r['description'] ?? '') ?></td>
+                    <td>
+                        <span class="badge bg-primary" style="font-size: 0.9rem;"><?= $r['point_cost'] ?> <?= $lang->t('pts') ?></span>
+                    </td>
+                    <td><?= $r['money_value'] ? ($settings['currency_symbol'] ?? '₾') . number_format($r['money_value'], 2) : '-' ?></td>
+                    <td>
+                        <?php if ($r['is_active']): ?>
+                            <i class="bi bi-check-circle-fill" style="color: var(--positive); font-size: 1.2rem;"></i>
+                        <?php else: ?>
+                            <i class="bi bi-x-circle" style="color: var(--navy-light); opacity: 0.5; font-size: 1.2rem;"></i>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="<?= $baseUrl ?>/rewards/<?= $r['id'] ?>/edit" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Redeem Reward Section -->
+<?php if (!empty($children) && !empty($rewards)): ?>
+<div class="card mb-5">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-gift me-2" style="color: var(--coral);"></i><?= $lang->t('redeem_reward') ?></h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="<?= $baseUrl ?>/rewards/redeem" class="row g-3 align-items-end">
+            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+            <div class="col-md-4">
+                <label class="form-label"><?= $lang->t('child') ?></label>
+                <select name="child_id" class="form-select" required>
+                    <?php foreach ($children as $c): ?>
+                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?> (<?= $c['points_balance'] ?> <?= $lang->t('pts') ?>)</option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label"><?= $lang->t('rewards') ?></label>
+                <select name="reward_id" class="form-select" required>
+                    <?php foreach ($rewards as $r): if (!$r['is_active']) continue; ?>
+                        <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r[$nameField] ?? $r['name']) ?> (<?= $r['point_cost'] ?> <?= $lang->t('pts') ?>)</option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="bi bi-gift me-1"></i><?= $lang->t('redeem') ?>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Redemption History -->
+<?php if (!empty($redemptions)): ?>
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i><?= $lang->t('reward_redemptions') ?></h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th><?= $lang->t('date') ?></th>
+                    <th><?= $lang->t('child') ?></th>
+                    <th><?= $lang->t('rewards') ?></th>
+                    <th><?= $lang->t('points') ?></th>
+                    <th><?= $lang->t('status') ?></th>
+                    <th class="text-end"><?= $lang->t('actions') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($redemptions as $rd): ?>
+                <tr>
+                    <td>
+                        <span><?= date('M j, Y', strtotime($rd['created_at'])) ?></span>
+                    </td>
+                    <td class="fw-semibold"><?= htmlspecialchars($rd['child_name']) ?></td>
+                    <td><?= htmlspecialchars($locale === 'ka' && !empty($rd['reward_name_ka']) ? $rd['reward_name_ka'] : $rd['reward_name']) ?></td>
+                    <td><span class="badge bg-primary"><?= $rd['points_spent'] ?> <?= $lang->t('pts') ?></span></td>
+                    <td>
+                        <?php
+                            $statusClass = match($rd['status']) {
+                                'fulfilled' => 'bg-success',
+                                'pending' => 'bg-warning',
+                                default => 'bg-secondary'
+                            };
+                        ?>
+                        <span class="badge <?= $statusClass ?>"><?= $lang->t($rd['status']) ?></span>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <?php if ($rd['status'] === 'pending'): ?>
+                            <form method="POST" action="<?= $baseUrl ?>/rewards/<?= $rd['id'] ?>/fulfill" class="d-inline">
+                                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                                <button class="btn btn-sm btn-success">
+                                    <i class="bi bi-check-lg me-1"></i><?= $lang->t('fulfill') ?>
+                                </button>
+                            </form>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>

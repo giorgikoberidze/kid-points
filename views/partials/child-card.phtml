@@ -1,0 +1,64 @@
+<?php
+    $childId = $child['id'] ?? 0;
+    $name = htmlspecialchars($child['nickname'] ?? $child['name'] ?? '');
+    $photo = $child['photo'] ?? '';
+    $dob = $child['date_of_birth'] ?? null;
+    $points = (int)($child['points_balance'] ?? 0);
+    $moneyEquivalent = number_format(($child['money_equivalent'] ?? 0), 2);
+    $streak = (int)($child['streak'] ?? 0);
+    $age = '';
+    if ($dob) {
+        $birthDate = new DateTime($dob);
+        $now = new DateTime();
+        $age = $birthDate->diff($now)->y;
+    }
+    $pointsClass = $points >= 0 ? 'text-success' : 'text-danger';
+?>
+<div class="card h-100 shadow-sm border-0">
+    <div class="card-body text-center">
+        <div class="mb-3">
+            <?php if ($photo && file_exists(__DIR__ . '/../../public/uploads/photos/' . $photo)): ?>
+                <img src="<?= $baseUrl ?>/uploads/photos/<?= htmlspecialchars($photo) ?>"
+                     alt="<?= $name ?>"
+                     class="rounded-circle"
+                     style="width:80px;height:80px;object-fit:cover;">
+            <?php else: ?>
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center"
+                     style="width:80px;height:80px;">
+                    <i class="bi bi-person-fill text-muted" style="font-size:2.5rem;"></i>
+                </div>
+            <?php endif; ?>
+        </div>
+        <h5 class="card-title mb-1"><?= $name ?></h5>
+        <?php if ($age): ?>
+            <small class="text-muted"><?= $age ?> <?= $lang->t('years_old') ?></small>
+        <?php endif; ?>
+        <?php if ($streak > 0): ?>
+            <div class="mt-1">
+                <span class="badge bg-warning text-dark">
+                    <i class="bi bi-fire"></i> <?= $streak ?> <?= $lang->t('day_streak') ?>
+                </span>
+            </div>
+        <?php endif; ?>
+        <div class="mt-3">
+            <h3 class="<?= $pointsClass ?> fw-bold mb-0"><?= $points > 0 ? '+' : '' ?><?= $points ?></h3>
+            <small class="text-muted"><?= $lang->t('points') ?></small>
+        </div>
+        <div class="mt-1">
+            <small class="text-muted"><i class="bi bi-cash"></i> <?= $moneyEquivalent ?> <?= $lang->t('currency') ?></small>
+        </div>
+        <div class="mt-3 d-flex justify-content-center gap-2">
+            <a href="<?= $baseUrl ?>/points/add/<?= $childId ?>" class="btn btn-sm btn-success" title="<?= $lang->t('add_points') ?>">
+                <i class="bi bi-plus-lg"></i>
+            </a>
+            <a href="<?= $baseUrl ?>/points/add/<?= $childId ?>?type=deduct" class="btn btn-sm btn-danger" title="<?= $lang->t('deduct_points') ?>">
+                <i class="bi bi-dash-lg"></i>
+            </a>
+        </div>
+    </div>
+    <div class="card-footer bg-transparent border-0 text-center pb-3">
+        <a href="<?= $baseUrl ?>/children/<?= $childId ?>" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-eye"></i> <?= $lang->t('view_profile') ?>
+        </a>
+    </div>
+</div>

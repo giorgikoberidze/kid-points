@@ -1,0 +1,58 @@
+<div class="mb-4">
+    <a href="<?= $baseUrl ?>/children" class="text-muted text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i><?= $lang->t('back') ?? 'Back' ?>
+    </a>
+</div>
+
+<h2 class="mb-4"><?= $lang->t('add_child') ?></h2>
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-body">
+        <form method="POST" action="<?= $baseUrl ?>/children" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('nickname') ?> *</label>
+                <input type="text" name="nickname" class="form-control" required autofocus>
+                <small class="text-muted"><?= $lang->t('name_hint') ?></small>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><?= $lang->t('first_name') ?></label>
+                    <input type="text" name="first_name" class="form-control">
+                </div>
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><?= $lang->t('last_name') ?></label>
+                    <input type="text" name="last_name" class="form-control">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('pin_code') ?></label>
+                <input type="text" name="pin" class="form-control" pattern="[0-9]{4}" maxlength="4" minlength="4" inputmode="numeric" style="max-width: 120px;" placeholder="0000">
+                <small class="text-muted"><?= $lang->t('pin_hint') ?></small>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('date_of_birth') ?></label>
+                <input type="date" name="date_of_birth" class="form-control">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('photo') ?></label>
+                <input type="file" name="photo" class="form-control" accept="image/*">
+                <small class="text-muted"><?= $lang->t('photo_upload_optional') ?></small>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i><?= $lang->t('save') ?>
+                </button>
+                <a href="<?= $baseUrl ?>/children" class="btn btn-outline-secondary">
+                    <?= $lang->t('cancel') ?>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

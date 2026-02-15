@@ -1,0 +1,115 @@
+<div class="mb-4">
+    <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>" class="text-muted text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i><?= $lang->t('back') ?>
+    </a>
+</div>
+
+<div class="d-flex align-items-center gap-3 mb-5">
+    <?php if ($child['photo_path']): ?>
+        <img src="<?= $baseUrl ?>/<?= htmlspecialchars($child['photo_path']) ?>"
+             class="rounded-circle"
+             width="64" height="64"
+             style="object-fit: cover; border: 3px solid var(--cream-dark);">
+    <?php else: ?>
+        <div class="rounded-circle d-flex align-items-center justify-content-center"
+             style="width: 64px; height: 64px; background: linear-gradient(135deg, var(--coral), var(--lavender)); color: #fff; font-size: 1.8rem;">
+            <i class="bi bi-person-fill"></i>
+        </div>
+    <?php endif; ?>
+    <div>
+        <h2 class="mb-0"><?= $lang->t('add_points') ?></h2>
+        <p class="text-muted mb-0"><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></p>
+    </div>
+</div>
+
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+?>
+
+<!-- Positive Behaviors -->
+<div class="mb-5">
+    <h5 class="d-flex align-items-center gap-2 mb-4">
+        <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+              style="width: 36px; height: 36px; background: var(--positive-bg);">
+            <i class="bi bi-hand-thumbs-up-fill" style="color: var(--positive);"></i>
+        </span>
+        <?= $lang->t('positive') ?>
+    </h5>
+    <div class="row g-3">
+        <?php foreach ($positive as $cat): ?>
+        <div class="col-6 col-md-4 col-lg-3">
+            <form method="POST" action="<?= $baseUrl ?>/points" class="quick-award-form">
+                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                <input type="hidden" name="child_id" value="<?= $child['id'] ?>">
+                <input type="hidden" name="category_id" value="<?= $cat['id'] ?>">
+                <input type="hidden" name="redirect" value="/children/<?= $child['id'] ?>">
+                <button type="submit" class="category-btn positive w-100">
+                    <i class="bi <?= $cat['icon'] ?>"></i>
+                    <div class="fw-semibold"><?= htmlspecialchars($cat[$nameField] ?? $cat['name']) ?></div>
+                    <span class="points-badge">+<?= abs($cat['default_points']) ?></span>
+                </button>
+            </form>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- Negative Behaviors -->
+<div class="mb-5">
+    <h5 class="d-flex align-items-center gap-2 mb-4">
+        <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+              style="width: 36px; height: 36px; background: var(--negative-bg);">
+            <i class="bi bi-hand-thumbs-down-fill" style="color: var(--negative);"></i>
+        </span>
+        <?= $lang->t('negative') ?>
+    </h5>
+    <div class="row g-3">
+        <?php foreach ($negative as $cat): ?>
+        <div class="col-6 col-md-4 col-lg-3">
+            <form method="POST" action="<?= $baseUrl ?>/points" class="quick-award-form">
+                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                <input type="hidden" name="child_id" value="<?= $child['id'] ?>">
+                <input type="hidden" name="category_id" value="<?= $cat['id'] ?>">
+                <input type="hidden" name="redirect" value="/children/<?= $child['id'] ?>">
+                <button type="submit" class="category-btn negative w-100">
+                    <i class="bi <?= $cat['icon'] ?>"></i>
+                    <div class="fw-semibold"><?= htmlspecialchars($cat[$nameField] ?? $cat['name']) ?></div>
+                    <span class="points-badge"><?= $cat['default_points'] ?></span>
+                </button>
+            </form>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- Manual Adjustment -->
+<div class="card" style="max-width: 500px;">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="bi bi-sliders me-2"></i><?= $lang->t('manual_adjustment') ?>
+        </h6>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="<?= $baseUrl ?>/points">
+            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+            <input type="hidden" name="child_id" value="<?= $child['id'] ?>">
+            <input type="hidden" name="redirect" value="/children/<?= $child['id'] ?>">
+
+            <div class="mb-3">
+                <label class="form-label"><?= $lang->t('points') ?></label>
+                <input type="number" name="manual_points" class="form-control" placeholder="<?= $lang->t('points_placeholder') ?>" required>
+                <small class="text-muted"><?= $lang->t('use_positive_negative') ?></small>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('note') ?></label>
+                <textarea name="note" class="form-control" rows="2" placeholder="<?= $lang->t('optional_note') ?>"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i><?= $lang->t('save') ?>
+            </button>
+        </form>
+    </div>
+</div>

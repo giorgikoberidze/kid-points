@@ -1,0 +1,174 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+$useGameTerms = ($settings['use_game_terms'] ?? '0') === '1';
+$ptsLabel = $useGameTerms ? $lang->t('pts_game') : $lang->t('pts');
+$historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('points_history');
+?>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 style="font-family: 'DM Serif Display', serif;">
+        <i class="bi bi-clock-history me-2" style="color: var(--accent-primary);"></i><?= $historyTitle ?>
+    </h4>
+    <div class="badge bg-primary fs-6"><?= $child['points_balance'] ?> <?= $ptsLabel ?></div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label"><?= $lang->t('type') ?></label>
+                <select name="type" class="form-select">
+                    <option value=""><?= $lang->t('all_types') ?></option>
+                    <option value="earn" <?= ($filters['type'] ?? '') === 'earn' ? 'selected' : '' ?>><?= $lang->t('earned') ?></option>
+                    <option value="deduct" <?= ($filters['type'] ?? '') === 'deduct' ? 'selected' : '' ?>><?= $lang->t('deducted') ?></option>
+                    <option value="redeem" <?= ($filters['type'] ?? '') === 'redeem' ? 'selected' : '' ?>><?= $lang->t('redeemed') ?></option>
+                    <option value="refund" <?= ($filters['type'] ?? '') === 'refund' ? 'selected' : '' ?>><?= $lang->t('refunded') ?></option>
+                    <option value="adjust" <?= ($filters['type'] ?? '') === 'adjust' ? 'selected' : '' ?>><?= $lang->t('adjusted') ?></option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label"><?= $lang->t('from') ?></label>
+                <input type="date" name="date_from" class="form-control" value="<?= $filters['date_from'] ?? '' ?>">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label"><?= $lang->t('to') ?></label>
+                <input type="date" name="date_to" class="form-control" value="<?= $filters['date_to'] ?? '' ?>">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i><?= $lang->t('filter') ?>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><?= $lang->t('transactions') ?></h6>
+        <small class="text-muted"><?= $totalCount ?> <?= $lang->t('total') ?></small>
+    </div>
+    <?php if (empty($transactions)): ?>
+        <div class="card-body text-center text-muted py-4">
+            <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i>
+            <p class="mb-0 mt-2"><?= $lang->t('no_transactions') ?></p>
+        </div>
+    <?php else: ?>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th><?= $lang->t('date') ?></th>
+                        <th><?= $lang->t('category') ?></th>
+                        <th><?= $lang->t('type') ?></th>
+                        <th class="text-end"><?= $lang->t('points') ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($transactions as $tx): ?>
+                        <tr>
+                            <td>
+                                <span><?= $lang->formatDate($tx['transaction_date'], 'short') ?></span>
+                                <small class="text-muted d-block"><?= $lang->formatDate($tx['transaction_date'], 'time') ?></small>
+                            </td>
+                            <td>
+                                <?php if (!empty($tx['category_icon'])): ?>
+                                    <i class="bi <?= $tx['category_icon'] ?> me-1"></i>
+                                <?php endif; ?>
+                                <?= htmlspecialchars($locale === 'ka' && !empty($tx['category_name_ka']) ? $tx['category_name_ka'] : ($tx['category_name'] ?? '-')) ?>
+                                <?php if (!empty($tx['note']) || !empty($tx['reward_name'])): ?>
+                                    <?php
+                                    $displayNote = '';
+                                    // For redeem/refund, use translated reward name if available
+                                    if (($tx['type'] === 'redeem' || $tx['type'] === 'refund') && !empty($tx['reward_name'])) {
+                                        $displayNote = ($locale === 'ka' && !empty($tx['reward_name_ka'])) ? $tx['reward_name_ka'] : $tx['reward_name'];
+                                    } elseif (!empty($tx['note'])) {
+                                        $displayNote = $tx['note'];
+                                        // Handle old data - strip English prefixes
+                                        if ($tx['type'] === 'redeem' || $tx['type'] === 'refund') {
+                                            $displayNote = preg_replace('/^Redeemed:\s*/', '', $displayNote);
+                                            $displayNote = preg_replace('/^Refund:\s*/', '', $displayNote);
+                                            $displayNote = preg_replace('/\s*\(cancelled\)$/', '', $displayNote);
+                                        } elseif (preg_match('/^Level-up bonus:\s*/', $displayNote)) {
+                                            $displayNote = preg_replace('/^Level-up bonus:\s*/', '', $displayNote);
+                                            $displayNote = $lang->t('levelup_bonus_prefix') . ' ' . $displayNote;
+                                        }
+                                    }
+                                    ?>
+                                    <?php if ($displayNote): ?>
+                                        <small class="text-muted d-block"><?= htmlspecialchars($displayNote) ?></small>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php
+                                $typeColors = [
+                                    'earn' => 'success',
+                                    'deduct' => 'danger',
+                                    'redeem' => 'info',
+                                    'refund' => 'warning',
+                                    'adjust' => 'secondary'
+                                ];
+                                $typeColor = $typeColors[$tx['type']] ?? 'secondary';
+                                ?>
+                                <span class="badge bg-<?= $typeColor ?>"><?= $lang->t($tx['type']) ?></span>
+                            </td>
+                            <td class="text-end">
+                                <?php if (!empty($tx['multiplier_value']) && $tx['multiplier_value'] > 1): ?>
+                                    <div class="d-flex flex-column align-items-end">
+                                        <span class="fw-bold points-positive">
+                                            +<?= $tx['points'] ?>
+                                        </span>
+                                        <small class="text-warning d-flex align-items-center gap-1">
+                                            <i class="bi bi-lightning-charge-fill"></i>
+                                            <?= $tx['multiplier_value'] ?>x
+                                            <span class="text-success">(+<?= $tx['bonus_points'] ?> <?= $lang->t('bonus') ?>)</span>
+                                        </small>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="fw-bold <?= $tx['points'] >= 0 ? 'points-positive' : 'points-negative' ?>">
+                                        <?= ($tx['points'] >= 0 ? '+' : '') . $tx['points'] ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <?php if ($totalPages > 1): ?>
+            <div class="card-footer">
+                <nav>
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        <?php if ($currentPage > 1): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?page=<?= $currentPage - 1 ?>&<?= http_build_query($filters) ?>">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
+                        <?php for ($i = max(1, $currentPage - 2); $i <= min($totalPages, $currentPage + 2); $i++): ?>
+                            <li class="page-item <?= $i === $currentPage ? 'active' : '' ?>">
+                                <a class="page-link" href="?page=<?= $i ?>&<?= http_build_query($filters) ?>"><?= $i ?></a>
+                            </li>
+                        <?php endfor; ?>
+
+                        <?php if ($currentPage < $totalPages): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?page=<?= $currentPage + 1 ?>&<?= http_build_query($filters) ?>">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>

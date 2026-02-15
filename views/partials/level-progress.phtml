@@ -1,0 +1,48 @@
+<?php
+/**
+ * Level Progress Component
+ * @param array $levelProgress - From LevelService::getLevelProgress()
+ * @param object $lang - Lang instance for translations
+ */
+if (empty($levelProgress) || empty($levelProgress['current_level'])) return;
+
+$currentLevel = $levelProgress['current_level'];
+$nextLevel = $levelProgress['next_level'];
+$locale = $lang->getLocale();
+$currentLevelName = $locale === 'ka' && !empty($currentLevel['name_ka']) ? $currentLevel['name_ka'] : $currentLevel['name'];
+$nextLevelName = $nextLevel ? ($locale === 'ka' && !empty($nextLevel['name_ka']) ? $nextLevel['name_ka'] : $nextLevel['name']) : null;
+?>
+<div class="level-progress-container">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="level-icon" style="font-size: 1.25rem;"><?= $currentLevel['icon'] ?? '🌱' ?></span>
+            <span class="fw-bold"><?= htmlspecialchars($currentLevelName) ?></span>
+            <span class="level-stars d-inline-flex gap-1">
+                <?php for ($i = 0; $i < ($currentLevel['stars'] ?? 1); $i++): ?>
+                    <i class="bi bi-star-fill" style="color: #fbbf24; font-size: 0.625rem;"></i>
+                <?php endfor; ?>
+            </span>
+        </div>
+        <?php if ($nextLevel): ?>
+        <div class="text-muted small">
+            <strong><?= $levelProgress['points_to_next_level'] ?></strong> <?= $lang->t('points_to_next_level') ?>
+            <span class="ms-1"><?= $nextLevel['icon'] ?? '' ?></span>
+        </div>
+        <?php else: ?>
+        <div class="text-success small fw-bold">
+            <i class="bi bi-check-circle me-1"></i><?= $lang->t('max_level_reached') ?>
+        </div>
+        <?php endif; ?>
+    </div>
+    <div class="level-progress-bar">
+        <div class="level-progress-fill"
+             style="width: <?= $levelProgress['progress_percentage'] ?>%; background: <?= $currentLevel['theme_color'] ?? 'var(--accent-primary)' ?>;">
+        </div>
+    </div>
+    <div class="d-flex justify-content-between mt-2 small text-muted">
+        <span><?= $levelProgress['total_earned'] ?> <?= $lang->t('total_earned') ?></span>
+        <?php if ($nextLevel): ?>
+        <span><?= $nextLevel['points_required'] ?> <?= $lang->t('pts') ?></span>
+        <?php endif; ?>
+    </div>
+</div>

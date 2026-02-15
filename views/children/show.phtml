@@ -1,0 +1,778 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+$descField = $locale === 'ka' ? 'description_ka' : 'description';
+?>
+<div class="row g-4 mb-5">
+    <!-- Child Profile Card -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body text-center py-4">
+                <?php if ($child['photo_path']): ?>
+                    <img src="<?= $baseUrl ?>/<?= htmlspecialchars($child['photo_path']) ?>"
+                         class="rounded-circle mb-3"
+                         width="140" height="140"
+                         style="object-fit: cover; border: 4px solid var(--cream-dark);">
+                <?php else: ?>
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
+                         style="width: 140px; height: 140px; background: linear-gradient(135deg, var(--coral), var(--lavender)); font-size: 4rem; color: #fff;">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                <?php endif; ?>
+
+                <h3 style="font-family: 'Nunito', sans-serif; font-weight: 800;"><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></h3>
+                <?php if (!empty($child['first_name']) || !empty($child['last_name'])): ?>
+                    <p class="text-muted mb-2" style="font-size: 0.9rem;">
+                        <?= htmlspecialchars(trim(($child['first_name'] ?? '') . ' ' . ($child['last_name'] ?? ''))) ?>
+                    </p>
+                <?php endif; ?>
+
+                <?php if ($child['date_of_birth']): ?>
+                    <p class="text-muted mb-4">
+                        <?php $age = (int)((time() - strtotime($child['date_of_birth'])) / 31557600); ?>
+                        <?= $age ?> <?= $lang->t('years_old') ?>
+                    </p>
+                <?php endif; ?>
+
+                <div class="mb-3">
+                    <div class="points-display <?= $child['points_balance'] >= 0 ? 'points-positive' : 'points-negative' ?>" style="font-size: 2.5rem;">
+                        <?= $child['points_balance'] ?> <?= $lang->t('points') ?>
+                    </div>
+                    <div class="money-equivalent">
+                        <?= $currencySymbol ?><?= number_format($child['points_balance'] / max(1, $pointsPerLari), 2) ?>
+                    </div>
+                </div>
+
+                <?php if (!empty($levelProgress['current_level'])): ?>
+                <div class="mb-3">
+                    <?php $level = $levelProgress['current_level']; include __DIR__ . '/../partials/level-badge.phtml'; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (isset($positivity)): ?>
+                <div class="mb-3">
+                    <?php $size = 'md'; $showLabel = true; $showTooltip = true; include __DIR__ . '/../partials/positivity-badge.phtml'; ?>
+                </div>
+                <?php endif; ?>
+
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    <a href="<?= $baseUrl ?>/points/add/<?= $child['id'] ?>" class="btn btn-success">
+                        <i class="bi bi-plus-lg me-1"></i><?= $lang->t('add_points') ?>
+                    </a>
+                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#bonusChestModal">
+                        <i class="bi bi-box2-heart me-1"></i><?= $lang->t('award_bonus_chest') ?>
+                    </button>
+                    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#multiplierModal">
+                        <i class="bi bi-lightning-charge-fill me-1"></i><?= $lang->t('grant_multiplier') ?>
+                    </button>
+                    <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>/edit" class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i><?= $lang->t('edit') ?>
+                    </a>
+                    <a href="<?= $baseUrl ?>/children/<?= $child['id'] ?>/cleanup" class="btn btn-outline-danger">
+                        <i class="bi bi-trash3 me-1"></i><?= $lang->t('cleanup_data') ?>
+                    </a>
+                </div>
+
+                <?php if ($activeMultiplier): ?>
+                <!-- Active Multiplier Badge -->
+                <div class="mt-3 p-3 rounded" style="background: linear-gradient(135deg, #fef3c7, #fde68a); border: 2px solid #fbbf24;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="badge bg-warning text-dark fs-6">
+                                <i class="bi bi-lightning-charge-fill"></i>
+                                <?= $activeMultiplier['multiplier'] ?>x <?= $lang->t('multiplier_active') ?>
+                            </span>
+                            <small class="d-block text-muted mt-1">
+                                <?= $lang->t('multiplier_expires') ?>: <?= date('M j, H:i', strtotime($activeMultiplier['expires_at'])) ?>
+                                (<?= round($activeMultiplier['hours_remaining'], 1) ?> <?= $lang->t('hours_remaining') ?>)
+                            </small>
+                        </div>
+                        <form action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/multiplier/remove" method="POST" onsubmit="return confirm('<?= $lang->t('confirm_remove_multiplier') ?>');">
+                            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($pendingChests)): ?>
+                <!-- Pending Bonus Chests -->
+                <div class="mt-3 p-3 rounded" style="background: linear-gradient(135deg, #fce7f3, #fbcfe8); border: 2px solid #f472b6;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="badge bg-pink text-white fs-6" style="background: #ec4899 !important;">
+                            <i class="bi bi-box2-heart-fill"></i>
+                            <?= count($pendingChests) ?> <?= $lang->t('pending_chests') ?? 'Pending Chest(s)' ?>
+                        </span>
+                    </div>
+                    <small class="text-muted d-block mb-2"><?= $lang->t('pending_chests_hint') ?? 'Waiting for child to open' ?></small>
+                    <?php foreach ($pendingChests as $pchest): ?>
+                    <div class="d-flex align-items-center justify-content-between bg-white rounded p-2 mb-1" style="border: 1px solid #f9a8d4;">
+                        <div>
+                            <i class="bi bi-gift-fill text-pink" style="color: #ec4899;"></i>
+                            <?php if ($pchest['reward_type'] === 'fixed_xp'): ?>
+                                <span class="fw-semibold">+<?= $pchest['reward_value'] ?> XP</span>
+                            <?php elseif ($pchest['reward_type'] === 'multiplier'): ?>
+                                <span class="fw-semibold"><?= $pchest['reward_value'] / 10 ?>x <?= $lang->t('multiplier') ?></span>
+                            <?php endif; ?>
+                            <small class="text-muted ms-2"><?= date('M j, H:i', strtotime($pchest['created_at'])) ?></small>
+                        </div>
+                        <form action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/bonus-chest/<?= $pchest['id'] ?>/cancel" method="POST" onsubmit="return confirm('<?= $lang->t('confirm_cancel_chest') ?? 'Cancel this pending chest?' ?>');">
+                            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="<?= $lang->t('cancel') ?>">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <div class="mt-4 pt-3" style="border-top: 1px solid var(--cream-dark);">
+                    <small class="text-muted d-block mb-2"><?= $lang->t('public_link') ?>:</small>
+                    <button class="btn btn-outline-info btn-sm" data-copy="<?= $_SERVER['HTTP_HOST'] . $baseUrl ?>/children/<?= $child['id'] ?>/public">
+                        <i class="bi bi-link-45deg me-1"></i><?= $lang->t('copy_link') ?>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats & Progress -->
+    <div class="col-lg-8">
+        <?php if (!empty($levelProgress['current_level'])): ?>
+        <div class="card mb-4 level-section">
+            <div class="card-header" style="background: transparent; border-bottom: 1px solid #fde68a;">
+                <h6 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i><?= $lang->t('level_progress') ?></h6>
+            </div>
+            <div class="card-body" style="background: transparent;">
+                <?php include __DIR__ . '/../partials/level-progress.phtml'; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($streaks)): ?>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-fire me-2" style="color: var(--coral);"></i><?= $lang->t('streaks') ?></h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <?php foreach ($streaks as $s): ?>
+                        <span class="streak-badge">
+                            <i class="bi <?= $s['category_icon'] ?>"></i>
+                            <?= htmlspecialchars($locale === 'ka' && !empty($s['category_name_ka']) ? $s['category_name_ka'] : $s['category_name']) ?>: <?= $s['current_count'] ?> <?= $lang->t('days') ?>
+                        </span>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-trophy-fill me-2" style="color: var(--gold);"></i><?= $lang->t('achievements') ?></h6>
+            </div>
+            <div class="card-body">
+                <?php if (empty($achievements)): ?>
+                    <p class="text-muted text-center mb-0"><?= $lang->t('no_achievements_yet') ?></p>
+                <?php else: ?>
+                    <div class="row g-3">
+                    <?php foreach ($achievements as $a): ?>
+                        <div class="col-4 col-md-3">
+                            <div class="achievement-badge <?= $a['earned_at'] ? '' : 'locked' ?>">
+                                <i class="bi <?= $a['icon'] ?>"></i>
+                                <small><?= htmlspecialchars($a[$nameField] ?? $a['name']) ?></small>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <?php if (!empty($rewards)): ?>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-gift-fill me-2" style="color: var(--mint);"></i><?= $lang->t('rewards') ?> <?= $lang->t('progress') ?></h6>
+            </div>
+            <div class="card-body reward-progress">
+                <?php foreach ($rewards as $r):
+                    $pct = min(100, ($child['points_balance'] / max(1, $r['point_cost'])) * 100);
+                ?>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-semibold">
+                            <i class="bi <?= $r['icon'] ?> me-1"></i><?= htmlspecialchars($r[$nameField] ?? $r['name']) ?>
+                        </span>
+                        <span class="badge bg-<?= $pct >= 100 ? 'success' : 'primary' ?>">
+                            <?= $child['points_balance'] ?>/<?= $r['point_cost'] ?> <?= $lang->t('pts') ?>
+                        </span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-<?= $pct >= 100 ? 'success' : 'primary' ?>" style="width: <?= $pct ?>%"></div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Goals Section -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-bullseye me-2" style="color: var(--coral);"></i><?= $lang->t('goals') ?></h6>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addGoalModal">
+                    <i class="bi bi-plus-lg me-1"></i><?= $lang->t('add_goal_for_child') ?? $lang->t('create_goal') ?>
+                </button>
+            </div>
+            <div class="card-body">
+                <?php if (empty($activeGoals)): ?>
+                    <p class="text-muted text-center mb-0"><?= $lang->t('no_active_goals') ?></p>
+                <?php else: ?>
+                    <?php foreach ($activeGoals as $goal): ?>
+                    <div class="mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span class="fw-semibold">
+                                    <?php if ($goal['is_favorite']): ?><i class="bi bi-star-fill text-warning me-1"></i><?php endif; ?>
+                                    <?= htmlspecialchars($goal[$nameField] ?? $goal['name']) ?>
+                                </span>
+                                <?php if (!empty($goal['deadline'])): ?>
+                                    <small class="text-<?= $goal['progress']['is_overdue'] ? 'danger' : 'muted' ?> d-block">
+                                        <i class="bi bi-calendar me-1"></i>
+                                        <?php if ($goal['progress']['is_overdue']): ?>
+                                            <?= $lang->t('overdue') ?>
+                                        <?php else: ?>
+                                            <?= $goal['progress']['days_until_deadline'] ?> <?= $lang->t('days_remaining') ?>
+                                        <?php endif; ?>
+                                    </small>
+                                <?php endif; ?>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-<?= $goal['progress']['percentage'] >= 100 ? 'success' : 'primary' ?>">
+                                    <?= round($goal['progress']['percentage']) ?>%
+                                </span>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editGoalModal<?= $goal['id'] ?>">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <form action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/goals/<?= $goal['id'] ?>/delete" method="POST" class="d-inline" onsubmit="return confirm('<?= $lang->t('confirm_delete_goal') ?>');">
+                                        <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                                        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-<?= $goal['progress']['percentage'] >= 100 ? 'success' : 'primary' ?>"
+                                 style="width: <?= min(100, $goal['progress']['percentage']) ?>%"></div>
+                        </div>
+                        <small class="text-muted">
+                            <?= $child['points_balance'] ?> / <?= $goal['target_points'] ?> <?= $lang->t('pts') ?>
+                            (<?= $currencySymbol ?><?= number_format($goal['target_points'] / $pointsPerLari, 2) ?>)
+                            <?php if ($goal['projected_completion'] && $goal['progress']['percentage'] < 100): ?>
+                                &bull; <?= $lang->t('projected_completion') ?>: <?= date('M j', strtotime($goal['projected_completion'])) ?>
+                            <?php endif; ?>
+                        </small>
+                    </div>
+
+                    <!-- Edit Goal Modal -->
+                    <div class="modal fade" id="editGoalModal<?= $goal['id'] ?>" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <form action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/goals/<?= $goal['id'] ?>/update" method="POST">
+                                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title"><?= $lang->t('edit_goal') ?></h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><?= $lang->t('goal_name') ?> *</label>
+                                                    <input type="text" name="name" class="form-control" required value="<?= htmlspecialchars($goal['name']) ?>">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label"><?= $lang->t('target_points') ?> *</label>
+                                                    <input type="number" name="target_points" class="form-control" required min="1" value="<?= $goal['target_points'] ?>">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label"><?= $lang->t('deadline') ?></label>
+                                                    <input type="date" name="deadline" class="form-control" value="<?= $goal['deadline'] ?? '' ?>">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card bg-light">
+                                                    <div class="card-body">
+                                                        <h6 class="card-title mb-3">
+                                                            <i class="bi bi-box2-heart me-2" style="color: #f59e0b;"></i>
+                                                            <?= $lang->t('goal_chest_reward') ?>
+                                                        </h6>
+                                                        <div class="mb-3">
+                                                            <label class="form-label"><?= $lang->t('chest_type') ?></label>
+                                                            <select name="chest_type" class="form-select chest-type-select" data-goal-id="<?= $goal['id'] ?>">
+                                                                <option value="" <?= empty($goal['chest_type']) ? 'selected' : '' ?>><?= $lang->t('no_chest') ?></option>
+                                                                <option value="small" <?= ($goal['chest_type'] ?? '') === 'small' ? 'selected' : '' ?>><?= $lang->t('chest_small') ?></option>
+                                                                <option value="medium" <?= ($goal['chest_type'] ?? '') === 'medium' ? 'selected' : '' ?>><?= $lang->t('chest_medium') ?></option>
+                                                                <option value="large" <?= ($goal['chest_type'] ?? '') === 'large' ? 'selected' : '' ?>><?= $lang->t('chest_large') ?></option>
+                                                                <option value="epic" <?= ($goal['chest_type'] ?? '') === 'epic' ? 'selected' : '' ?>><?= $lang->t('chest_epic') ?></option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3 reward-mode-group" data-goal-id="<?= $goal['id'] ?>" style="<?= empty($goal['chest_type']) ? 'display:none;' : '' ?>">
+                                                            <label class="form-label"><?= $lang->t('reward_mode') ?></label>
+                                                            <select name="chest_reward_mode" class="form-select reward-mode-select" data-goal-id="<?= $goal['id'] ?>">
+                                                                <option value="fixed_xp" <?= ($goal['chest_reward_mode'] ?? '') === 'fixed_xp' ? 'selected' : '' ?>><?= $lang->t('reward_fixed_xp') ?></option>
+                                                                <option value="percentage" <?= ($goal['chest_reward_mode'] ?? '') === 'percentage' ? 'selected' : '' ?>><?= $lang->t('reward_percentage') ?></option>
+                                                                <option value="multiplier" <?= ($goal['chest_reward_mode'] ?? '') === 'multiplier' ? 'selected' : '' ?>><?= $lang->t('reward_multiplier') ?></option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-0 reward-value-group" data-goal-id="<?= $goal['id'] ?>" style="<?= empty($goal['chest_type']) ? 'display:none;' : '' ?>">
+                                                            <label class="form-label"><?= $lang->t('reward_value') ?></label>
+                                                            <input type="number" name="chest_reward_value" class="form-control" min="0" max="1000" value="<?= $goal['chest_reward_value'] ?? '' ?>">
+                                                            <small class="text-muted reward-hint" data-goal-id="<?= $goal['id'] ?>"><?= $lang->t('reward_fixed_xp_hint') ?></small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= $lang->t('cancel') ?></button>
+                                        <button type="submit" class="btn btn-primary"><?= $lang->t('save') ?></button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+
+                <?php if (!empty($completedGoals)): ?>
+                <div class="mt-3">
+                    <a class="text-muted small" data-bs-toggle="collapse" href="#completedGoals" role="button">
+                        <i class="bi bi-chevron-down me-1"></i><?= $lang->t('completed_goals') ?> (<?= count($completedGoals) ?>)
+                    </a>
+                    <div class="collapse mt-2" id="completedGoals">
+                        <?php foreach ($completedGoals as $cg): ?>
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span class="text-muted">
+                                <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                <?= htmlspecialchars($cg[$nameField] ?? $cg['name']) ?>
+                            </span>
+                            <small class="text-muted"><?= date('M j', strtotime($cg['completed_at'])) ?></small>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Wishlist Section -->
+        <?php if (!empty($wishlistItems)): ?>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-heart-fill me-2" style="color: var(--coral);"></i><?= $lang->t('wishlist') ?></h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <?php foreach ($wishlistItems as $item): ?>
+                    <div class="col-6 col-md-4">
+                        <div class="border rounded p-2 text-center">
+                            <i class="bi <?= $item['icon'] ?? 'bi-gift' ?> d-block mb-1" style="font-size: 1.5rem;"></i>
+                            <small class="d-block fw-semibold"><?= htmlspecialchars($item[$nameField] ?? $item['reward_name']) ?></small>
+                            <small class="text-muted"><?= $item['point_cost'] ?> <?= $lang->t('pts') ?></small>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Recent Activity Section -->
+        <?php if (!empty($recentActivity)): ?>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-activity me-2" style="color: var(--mint);"></i><?= $lang->t('recent_activity') ?></h6>
+                <a href="<?= $baseUrl ?>/activity?child_id=<?= $child['id'] ?>" class="btn btn-sm btn-outline-secondary"><?= $lang->t('view_all') ?></a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <?php foreach ($recentActivity as $activity): ?>
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                        <div>
+                            <span class="badge bg-<?= getActivityBadgeColor($activity['action']) ?> me-2">
+                                <?= $activityService->getActionLabel($activity['action'], $locale) ?>
+                            </span>
+                            <small class="text-muted"><?= htmlspecialchars($activityService->formatDetails($activity['action'], $activity['details'], $locale)) ?></small>
+                        </div>
+                        <small class="text-muted"><?= date('M j H:i', strtotime($activity['created_at'])) ?></small>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php
+function getActivityBadgeColor(string $action): string {
+    $colors = [
+        'goal_created' => 'success',
+        'goal_updated' => 'info',
+        'goal_deleted' => 'danger',
+        'goal_completed' => 'success',
+        'goal_favorite_set' => 'warning',
+        'goal_favorite_unset' => 'secondary',
+        'reward_requested' => 'primary',
+        'reward_cancelled' => 'warning',
+        'reward_fulfilled' => 'success',
+        'wishlist_added' => 'info',
+        'wishlist_removed' => 'secondary',
+        'child_login' => 'info',
+        'child_logout' => 'secondary',
+        'points_earned' => 'success',
+        'points_deducted' => 'danger',
+        'points_adjusted' => 'info',
+    ];
+    return $colors[$action] ?? 'secondary';
+}
+?>
+
+<!-- Add Goal Modal -->
+<div class="modal fade" id="addGoalModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/goals" method="POST">
+                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title"><?= $lang->t('create_goal') ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"><?= $lang->t('goal_name') ?> *</label>
+                                <input type="text" name="name" class="form-control" required maxlength="100" placeholder="<?= $lang->t('goal_name_placeholder') ?>">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><?= $lang->t('target_points') ?> *</label>
+                                <input type="number" name="target_points" class="form-control" required min="1" max="100000" placeholder="100">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><?= $lang->t('deadline') ?> <small class="text-muted">(<?= $lang->t('optional') ?>)</small></label>
+                                <input type="date" name="deadline" class="form-control" min="<?= date('Y-m-d') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-3">
+                                        <i class="bi bi-box2-heart me-2" style="color: #f59e0b;"></i>
+                                        <?= $lang->t('goal_chest_reward') ?>
+                                    </h6>
+                                    <div class="mb-3">
+                                        <label class="form-label"><?= $lang->t('chest_type') ?></label>
+                                        <select name="chest_type" class="form-select" id="newGoalChestType">
+                                            <option value=""><?= $lang->t('no_chest') ?></option>
+                                            <option value="small"><?= $lang->t('chest_small') ?></option>
+                                            <option value="medium"><?= $lang->t('chest_medium') ?></option>
+                                            <option value="large"><?= $lang->t('chest_large') ?></option>
+                                            <option value="epic"><?= $lang->t('chest_epic') ?></option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3" id="newGoalRewardModeGroup" style="display: none;">
+                                        <label class="form-label"><?= $lang->t('reward_mode') ?></label>
+                                        <select name="chest_reward_mode" class="form-select" id="newGoalRewardMode">
+                                            <option value="fixed_xp"><?= $lang->t('reward_fixed_xp') ?></option>
+                                            <option value="percentage"><?= $lang->t('reward_percentage') ?></option>
+                                            <option value="multiplier"><?= $lang->t('reward_multiplier') ?></option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-0" id="newGoalRewardValueGroup" style="display: none;">
+                                        <label class="form-label" id="newGoalRewardLabel"><?= $lang->t('reward_value') ?></label>
+                                        <input type="number" name="chest_reward_value" class="form-control" min="0" max="1000" id="newGoalRewardValue">
+                                        <small class="text-muted" id="newGoalRewardHint"><?= $lang->t('reward_fixed_xp_hint') ?></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= $lang->t('cancel') ?></button>
+                    <button type="submit" class="btn btn-primary"><?= $lang->t('create_goal') ?></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction History -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i><?= $lang->t('transaction_history') ?></h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th><?= $lang->t('date') ?></th>
+                    <th><?= $lang->t('category') ?></th>
+                    <th><?= $lang->t('type') ?></th>
+                    <th><?= $lang->t('points') ?></th>
+                    <th><?= $lang->t('note') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if (empty($transactions)): ?>
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <p class="mb-0 mt-2"><?= $lang->t('no_transactions') ?></p>
+                    </td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($transactions as $tx): ?>
+                <tr>
+                    <td>
+                        <span><?= date('M j', strtotime($tx['transaction_date'])) ?></span>
+                        <small class="d-block text-muted"><?= date('H:i', strtotime($tx['transaction_date'])) ?></small>
+                    </td>
+                    <td>
+                        <?php if (!empty($tx['category_icon'])): ?>
+                            <i class="bi <?= $tx['category_icon'] ?> me-1"></i>
+                        <?php endif; ?>
+                        <?= htmlspecialchars($locale === 'ka' && !empty($tx['category_name_ka']) ? $tx['category_name_ka'] : ($tx['category_name'] ?? '-')) ?>
+                    </td>
+                    <td><span class="badge badge-<?= $tx['type'] ?>"><?= $lang->t($tx['type']) ?></span></td>
+                    <td>
+                        <?php if (!empty($tx['multiplier_value']) && $tx['multiplier_value'] > 1): ?>
+                            <div class="d-flex flex-column">
+                                <span class="points-positive fw-bold">
+                                    +<?= $tx['points'] ?>
+                                </span>
+                                <small class="text-warning">
+                                    <i class="bi bi-lightning-charge-fill"></i>
+                                    <?= $tx['multiplier_value'] ?>x
+                                    <span class="text-success">(+<?= $tx['bonus_points'] ?>)</span>
+                                </small>
+                            </div>
+                        <?php else: ?>
+                            <span class="<?= $tx['points'] >= 0 ? 'points-positive' : 'points-negative' ?> fw-bold">
+                                <?= ($tx['points'] >= 0 ? '+' : '') . $tx['points'] ?>
+                            </span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="text-muted">
+                        <?php
+                        $displayNote = '';
+                        // For redeem/refund, use translated reward name if available
+                        if (($tx['type'] === 'redeem' || $tx['type'] === 'refund') && !empty($tx['reward_name'])) {
+                            $displayNote = ($locale === 'ka' && !empty($tx['reward_name_ka'])) ? $tx['reward_name_ka'] : $tx['reward_name'];
+                        } elseif (!empty($tx['note'])) {
+                            $displayNote = $tx['note'];
+                            // Handle old data - strip English prefixes
+                            if ($tx['type'] === 'redeem' || $tx['type'] === 'refund') {
+                                $displayNote = preg_replace('/^Redeemed:\s*/', '', $displayNote);
+                                $displayNote = preg_replace('/^Refund:\s*/', '', $displayNote);
+                                $displayNote = preg_replace('/\s*\(cancelled\)$/', '', $displayNote);
+                            } elseif (preg_match('/^Level-up bonus:\s*/', $displayNote)) {
+                                $displayNote = preg_replace('/^Level-up bonus:\s*/', '', $displayNote);
+                                $displayNote = $lang->t('levelup_bonus_prefix') . ' ' . $displayNote;
+                            }
+                        }
+                        echo htmlspecialchars($displayNote);
+                        ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<?php if (!empty($levelUp)): ?>
+<!-- Level-up Celebration -->
+<script>
+window.levelUpData = <?= json_encode($levelUp) ?>;
+window.langStrings = {
+    level_up: <?= json_encode($lang->t('level_up')) ?>,
+    reached_level: <?= json_encode($lang->t('reached_level')) ?>,
+    bonus_points: <?= json_encode($lang->t('bonus_points')) ?>,
+    awesome: <?= json_encode($lang->t('awesome')) ?>
+};
+</script>
+<script src="<?= $baseUrl ?>/assets/js/level-celebration.js"></script>
+<?php endif; ?>
+
+<!-- Bonus Chest Modal -->
+<div class="modal fade" id="bonusChestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-bottom: 2px solid #fbbf24;">
+                <h5 class="modal-title">
+                    <i class="bi bi-box2-heart me-2" style="color: #f59e0b;"></i>
+                    <?= $lang->t('award_bonus_chest') ?>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/bonus-chest">
+                <div class="modal-body">
+                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+                    <p class="text-muted mb-4">
+                        Award a special bonus chest to <strong><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></strong>.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label"><?= $lang->t('chest_reward') ?> (XP)</label>
+                        <input type="number" name="reward" class="form-control" value="50" min="0" max="10000">
+                        <small class="text-muted">XP points to award with the chest</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><?= $lang->t('sunday_chest_multiplier') ?></label>
+                        <select name="multiplier" class="form-select">
+                            <option value="0">No multiplier</option>
+                            <option value="1.5">1.5x (24 hours)</option>
+                            <option value="2">2x (24 hours)</option>
+                            <option value="3">3x (24 hours)</option>
+                            <option value="5">5x (24 hours)</option>
+                        </select>
+                        <small class="text-muted">Optional XP multiplier lasting 24 hours</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?= $lang->t('cancel') ?></button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-gift-fill me-1"></i><?= $lang->t('award_bonus_chest') ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Grant Multiplier Modal -->
+<div class="modal fade" id="multiplierModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #dbeafe, #93c5fd); border-bottom: 2px solid #3b82f6;">
+                <h5 class="modal-title">
+                    <i class="bi bi-lightning-charge-fill me-2" style="color: #2563eb;"></i>
+                    <?= $lang->t('grant_multiplier') ?>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="<?= $baseUrl ?>/children/<?= $child['id'] ?>/multiplier/grant">
+                <div class="modal-body">
+                    <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+
+                    <p class="text-muted mb-4">
+                        Grant an XP multiplier to <strong><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></strong>.
+                        All positive points earned will be multiplied.
+                    </p>
+
+                    <?php if ($activeMultiplier): ?>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        This child already has an active <?= $activeMultiplier['multiplier'] ?>x multiplier.
+                        Granting a new one will replace it.
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="mb-3">
+                        <label class="form-label"><?= $lang->t('grant_multiplier') ?></label>
+                        <select name="multiplier" class="form-select" required>
+                            <option value="1.5">1.5x</option>
+                            <option value="2" selected>2x</option>
+                            <option value="3">3x</option>
+                            <option value="5">5x</option>
+                            <option value="10">10x</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><?= $lang->t('multiplier_duration') ?></label>
+                        <select name="duration" class="form-select" required>
+                            <option value="1">1 hour</option>
+                            <option value="2">2 hours</option>
+                            <option value="6">6 hours</option>
+                            <option value="12">12 hours</option>
+                            <option value="24" selected>24 hours (1 day)</option>
+                            <option value="48">48 hours (2 days)</option>
+                            <option value="72">72 hours (3 days)</option>
+                            <option value="168">168 hours (1 week)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?= $lang->t('cancel') ?></button>
+                    <button type="submit" class="btn btn-info">
+                        <i class="bi bi-lightning-charge-fill me-1"></i><?= $lang->t('grant_multiplier') ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Goal chest configuration form handling
+document.addEventListener('DOMContentLoaded', function() {
+    const hints = {
+        fixed_xp: <?= json_encode($lang->t('reward_fixed_xp_hint')) ?>,
+        percentage: <?= json_encode($lang->t('reward_percentage_hint')) ?>,
+        multiplier: <?= json_encode($lang->t('reward_multiplier_hint')) ?>
+    };
+
+    // New goal modal
+    const newChestType = document.getElementById('newGoalChestType');
+    const newRewardModeGroup = document.getElementById('newGoalRewardModeGroup');
+    const newRewardValueGroup = document.getElementById('newGoalRewardValueGroup');
+    const newRewardMode = document.getElementById('newGoalRewardMode');
+    const newRewardHint = document.getElementById('newGoalRewardHint');
+
+    if (newChestType) {
+        newChestType.addEventListener('change', function() {
+            const show = this.value !== '';
+            newRewardModeGroup.style.display = show ? 'block' : 'none';
+            newRewardValueGroup.style.display = show ? 'block' : 'none';
+        });
+    }
+
+    if (newRewardMode) {
+        newRewardMode.addEventListener('change', function() {
+            newRewardHint.textContent = hints[this.value] || '';
+        });
+    }
+
+    // Edit goal modals
+    document.querySelectorAll('.chest-type-select').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const goalId = this.dataset.goalId;
+            const show = this.value !== '';
+            document.querySelector('.reward-mode-group[data-goal-id="' + goalId + '"]').style.display = show ? 'block' : 'none';
+            document.querySelector('.reward-value-group[data-goal-id="' + goalId + '"]').style.display = show ? 'block' : 'none';
+        });
+    });
+
+    document.querySelectorAll('.reward-mode-select').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const goalId = this.dataset.goalId;
+            const hint = document.querySelector('.reward-hint[data-goal-id="' + goalId + '"]');
+            if (hint) {
+                hint.textContent = hints[this.value] || '';
+            }
+        });
+    });
+});
+</script>

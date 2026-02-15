@@ -1,0 +1,99 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+$useGameTerms = ($settings['use_game_terms'] ?? '0') === '1';
+$ptsLabel = $useGameTerms ? $lang->t('pts_game') : $lang->t('pts');
+$shopLabel = $useGameTerms ? $lang->t('rewards_game') : $lang->t('browse_rewards');
+?>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 style="font-family: 'DM Serif Display', serif;">
+        <i class="bi bi-bag-check me-2" style="color: var(--accent-primary);"></i><?= $lang->t('redemption_history') ?>
+    </h4>
+    <a href="<?= $baseUrl ?>/my/rewards" class="btn btn-primary btn-sm">
+        <i class="bi bi-gift me-1"></i><?= $shopLabel ?>
+    </a>
+</div>
+
+<div class="card">
+    <?php if (empty($redemptions)): ?>
+        <div class="card-body text-center text-muted py-5">
+            <i class="bi bi-bag" style="font-size: 3rem; opacity: 0.5;"></i>
+            <p class="mt-3 mb-0"><?= $lang->t('no_redemptions_yet') ?></p>
+            <a href="<?= $baseUrl ?>/my/rewards" class="btn btn-primary mt-3">
+                <i class="bi bi-gift me-1"></i><?= $shopLabel ?>
+            </a>
+        </div>
+    <?php else: ?>
+        <div class="list-group list-group-flush">
+            <?php foreach ($redemptions as $rd): ?>
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3"
+                                 style="width: 48px; height: 48px; background: var(--bg-tertiary); color: var(--accent-primary); font-size: 1.25rem;">
+                                <i class="bi <?= $rd['reward_icon'] ?? 'bi-gift' ?>"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1"><?= htmlspecialchars($locale === 'ka' && !empty($rd['reward_name_ka']) ? $rd['reward_name_ka'] : $rd['reward_name']) ?></h6>
+                                <small class="text-muted">
+                                    <?= $lang->formatDate($rd['created_at'], 'short') ?>
+                                    <?php if ($rd['requested_by'] === 'child'): ?>
+                                        &bull; <?= $lang->t('requested_by_you') ?>
+                                    <?php endif; ?>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-<?php
+                                echo match($rd['status']) {
+                                    'fulfilled' => 'success',
+                                    'pending' => 'warning',
+                                    'cancelled' => 'secondary',
+                                    default => 'secondary'
+                                };
+                            ?> mb-1"><?= $lang->t($rd['status']) ?></span>
+                            <div class="fw-bold"><?= $rd['points_spent'] ?> <?= $ptsLabel ?></div>
+                            <?php if ($rd['money_value']): ?>
+                                <small class="text-muted">= <?= $currencySymbol ?><?= number_format($rd['money_value'], 2) ?></small>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <?php if ($rd['status'] === 'cancelled' && !empty($rd['cancelled_at'])): ?>
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-x-circle me-1"></i>
+                            <?= $lang->t('cancelled_on') ?> <?= $lang->formatDate($rd['cancelled_at'], 'long') ?>
+                        </small>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
+<!-- Summary Stats -->
+<?php if (!empty($redemptions)): ?>
+<?php
+$fulfilled = array_filter($redemptions, fn($r) => $r['status'] === 'fulfilled');
+$totalSpent = array_sum(array_column($fulfilled, 'points_spent'));
+?>
+<div class="card mt-4">
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-4">
+                <div class="h4 mb-0"><?= count($redemptions) ?></div>
+                <small class="text-muted"><?= $lang->t('total_requests') ?></small>
+            </div>
+            <div class="col-4">
+                <div class="h4 mb-0 text-success"><?= count($fulfilled) ?></div>
+                <small class="text-muted"><?= $lang->t('fulfilled') ?></small>
+            </div>
+            <div class="col-4">
+                <div class="h4 mb-0"><?= $totalSpent ?></div>
+                <small class="text-muted"><?= $lang->t('points_spent') ?></small>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>

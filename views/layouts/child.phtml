@@ -1,0 +1,447 @@
+<?php
+// Get settings for game mode in navigation
+$settingsModel = new \App\Models\Setting();
+$layoutSettings = $settingsModel->getAll();
+$useGameTerms = ($layoutSettings['use_game_terms'] ?? '0') === '1';
+
+// Get child data for gamification settings
+$childGamification = [
+    'celebration_style' => 'simple',
+    'pet_creature' => 'dragon',
+    'pet_skin' => 'default',
+    'pet_enabled' => true,
+    'sound_enabled' => true
+];
+if (isset($_SESSION['child_id'])) {
+    $childModel = new \App\Models\Child();
+    $childData = $childModel->find($_SESSION['child_id']);
+    if ($childData) {
+        $childGamification = [
+            'celebration_style' => $childData['celebration_style'] ?? 'simple',
+            'pet_creature' => $childData['pet_creature'] ?? 'dragon',
+            'pet_skin' => $childData['pet_skin'] ?? 'default',
+            'pet_enabled' => (bool)($childData['pet_enabled'] ?? 1),
+            'sound_enabled' => (bool)($childData['sound_enabled'] ?? 1)
+        ];
+    }
+}
+
+// Get child's current level for theming
+$childLevel = null;
+$levelThemeColor = '#22c55e'; // Default green
+$levelIcon = '⭐';
+$levelNumber = 1;
+if (isset($_SESSION['child_id'])) {
+    $levelService = new \App\Services\LevelService();
+    $levelProgress = $levelService->getLevelProgress($_SESSION['child_id']);
+    if ($levelProgress['current_level']) {
+        $childLevel = $levelProgress['current_level'];
+        $levelThemeColor = $childLevel['theme_color'] ?? '#22c55e';
+        $levelIcon = $childLevel['icon'] ?? '⭐';
+        $levelNumber = $childLevel['level_number'] ?? 1;
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="<?= $lang->getLocale() ?>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($_SESSION['child_nickname'] ?? '') ?> - <?= $lang->t('app_name') ?></title>
+    <link rel="icon" type="image/svg+xml" href="<?= $baseUrl ?>/favicon.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" rel="stylesheet">
+    <link href="<?= $baseUrl ?>/assets/css/style.css" rel="stylesheet">
+    <style>
+        body {
+            background: var(--bg-primary);
+            padding-bottom: 80px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .child-navbar {
+            background: var(--bg-card);
+            border-bottom: 2px solid transparent;
+            border-image: linear-gradient(90deg, transparent, var(--level-color), transparent) 1;
+            padding: 12px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .child-navbar .level-icon-header {
+            font-size: 1.25rem;
+            filter: drop-shadow(0 0 4px rgba(var(--level-color-rgb), 0.5));
+        }
+        .child-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+        .child-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 2px solid transparent;
+            border-image: linear-gradient(90deg, transparent, var(--level-color), transparent) 1;
+            padding: 8px 0;
+            z-index: 1000;
+        }
+        .child-bottom-nav .nav-item {
+            flex: 1;
+            text-align: center;
+        }
+        .child-bottom-nav .nav-link {
+            color: var(--text-secondary);
+            padding: 8px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .child-bottom-nav .nav-link i {
+            font-size: 1.25rem;
+            margin-bottom: 2px;
+        }
+        .child-bottom-nav .nav-link:hover,
+        .child-bottom-nav .nav-link.active {
+            color: var(--level-color);
+        }
+        .child-bottom-nav .nav-link.active i {
+            filter: drop-shadow(0 0 3px rgba(var(--level-color-rgb), 0.4));
+        }
+        .celebration-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-info));
+            color: white;
+            padding: 32px 48px;
+            border-radius: 16px;
+            text-align: center;
+            z-index: 2000;
+            animation: celebrationPop 0.5s ease-out;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .celebration-toast h3 {
+            font-family: 'DM Serif Display', serif;
+            margin-bottom: 8px;
+        }
+        @keyframes celebrationPop {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        .milestone-badge {
+            background: linear-gradient(135deg, var(--accent-warning), #f59e0b);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        /* ===========================================
+           PROGRESSIVE LEVEL-BASED ENHANCEMENTS
+           =========================================== */
+
+        /* Star pattern SVG for levels 3-4 */
+        .level-3 .child-content,
+        .level-4 .child-content {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath d='M25 10l2.5 7.5H35l-6 4.5 2.5 7.5-6-4.5-6 4.5 2.5-7.5-6-4.5h7.5z' fill='%23fbbf24' opacity='0.08'/%3E%3Cpath d='M75 50l2 6H83l-4.8 3.6 2 6-4.8-3.6-4.8 3.6 2-6-4.8-3.6h6z' fill='%23fbbf24' opacity='0.06'/%3E%3Cpath d='M45 70l1.5 4.5h5l-4 3 1.5 4.5-4-3-4 3 1.5-4.5-4-3h5z' fill='%23fbbf24' opacity='0.07'/%3E%3C/svg%3E");
+            background-size: 150px 150px;
+        }
+
+        /* Diamond pattern SVG for levels 5-6 */
+        .level-5 .child-content,
+        .level-6 .child-content {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M30 15l8 15-8 15-8-15z' fill='%23fbbf24' opacity='0.06'/%3E%3Cpath d='M90 45l6 11-6 11-6-11z' fill='%23a78bfa' opacity='0.05'/%3E%3Cpath d='M50 75l7 13-7 13-7-13z' fill='%23fbbf24' opacity='0.07'/%3E%3Cpath d='M15 55l5 9-5 9-5-9z' fill='%2360a5fa' opacity='0.04'/%3E%3Cpath d='M100 85l4 7-4 7-4-7z' fill='%23fbbf24' opacity='0.05'/%3E%3C/svg%3E");
+            background-size: 180px 180px;
+        }
+
+        /* Fire pattern SVG for level 7 (Legendary) */
+        .level-7 .child-content {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cpath d='M25 20c0 0 5-10 10 0s-5 15-10 10c-5-5 0-10 0-10z' fill='%23ff6b35' opacity='0.08'/%3E%3Cpath d='M95 50c0 0 4-8 8 0s-4 12-8 8c-4-4 0-8 0-8z' fill='%23ffd700' opacity='0.06'/%3E%3Cpath d='M55 85c0 0 6-12 12 0s-6 18-12 12c-6-6 0-12 0-12z' fill='%23ff6b35' opacity='0.07'/%3E%3Cpath d='M120 25c0 0 3-6 6 0s-3 9-6 6c-3-3 0-6 0-6z' fill='%23ffd700' opacity='0.05'/%3E%3Cpath d='M15 100c0 0 4-8 8 0s-4 12-8 8c-4-4 0-8 0-8z' fill='%23ff6b35' opacity='0.06'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+        }
+
+        /* Level 3: Enhanced - subtle improvements */
+        .level-3 .card,
+        .level-3 .player-card {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(var(--level-color-rgb), 0.1);
+        }
+
+        /* Level 4: Premium - golden accents */
+        .level-4 .card,
+        .level-4 .player-card {
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08), 0 0 20px rgba(var(--level-color-rgb), 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+        .level-4 .child-navbar,
+        .level-4 .child-bottom-nav {
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.1);
+        }
+
+        /* Level 5: Elite - golden borders and glow */
+        .level-5 .card,
+        .level-5 .player-card {
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1), 0 0 30px rgba(251, 191, 36, 0.15);
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            position: relative;
+        }
+        .level-5 .player-card::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.3));
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        .level-5 .child-navbar,
+        .level-5 .child-bottom-nav {
+            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(254, 243, 199, 0.3) 100%);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+        }
+
+        /* Level 6: Champion - full effects with animation */
+        .level-6 .card,
+        .level-6 .player-card {
+            box-shadow: 0 4px 35px rgba(0, 0, 0, 0.12), 0 0 40px rgba(251, 191, 36, 0.2), 0 0 60px rgba(var(--level-color-rgb), 0.15);
+            border: 2px solid rgba(251, 191, 36, 0.4);
+            position: relative;
+        }
+        .level-6 .player-card::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b, #fbbf24, #e0e7ff, #fbbf24);
+            background-size: 300% 300%;
+            border-radius: inherit;
+            z-index: -1;
+            animation: goldenShimmer 4s ease infinite;
+            opacity: 0.4;
+        }
+        .level-6 .child-navbar,
+        .level-6 .child-bottom-nav {
+            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(224, 231, 255, 0.4) 100%);
+            box-shadow: 0 0 25px rgba(129, 140, 248, 0.2);
+        }
+        .level-6 .level-icon-header {
+            animation: legendaryPulse 2s ease-in-out infinite;
+        }
+
+        /* Level 7: Legendary - Ultimate fire effects */
+        .level-7 .card,
+        .level-7 .player-card {
+            box-shadow: 0 4px 40px rgba(0, 0, 0, 0.15), 0 0 50px rgba(255, 107, 53, 0.25), 0 0 80px rgba(255, 215, 0, 0.2);
+            border: 2px solid rgba(255, 107, 53, 0.5);
+            position: relative;
+        }
+        .level-7 .player-card::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            background: linear-gradient(135deg, #ff6b35, #f7931e, #ffd700, #ff6b35, #ffd700);
+            background-size: 400% 400%;
+            border-radius: inherit;
+            z-index: -1;
+            animation: legendaryFireShimmer 3s ease infinite;
+            opacity: 0.5;
+        }
+        .level-7 .child-navbar,
+        .level-7 .child-bottom-nav {
+            background: linear-gradient(180deg, var(--bg-card) 0%, rgba(255, 107, 53, 0.15) 100%);
+            box-shadow: 0 0 30px rgba(255, 107, 53, 0.2);
+        }
+        .level-7 .level-icon-header {
+            animation: legendaryFirePulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes legendaryFireShimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes legendaryFirePulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255, 107, 53, 0.6)); }
+            50% { transform: scale(1.15); filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.9)); }
+        }
+
+        @keyframes goldenShimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes legendaryPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(var(--level-color-rgb), 0.5)); }
+            50% { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(var(--level-color-rgb), 0.8)); }
+        }
+
+        /* Sparkle effect for level 5-7 borders */
+        .level-5 .child-navbar::after,
+        .level-6 .child-navbar::after,
+        .level-7 .child-navbar::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(251, 191, 36, 0.8) 20%,
+                rgba(255, 255, 255, 0.9) 50%,
+                rgba(251, 191, 36, 0.8) 80%,
+                transparent 100%);
+            background-size: 200% 100%;
+            animation: sparkleSlide 3s linear infinite;
+        }
+        .level-5 .child-bottom-nav::before,
+        .level-6 .child-bottom-nav::before,
+        .level-7 .child-bottom-nav::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(251, 191, 36, 0.8) 20%,
+                rgba(255, 255, 255, 0.9) 50%,
+                rgba(251, 191, 36, 0.8) 80%,
+                transparent 100%);
+            background-size: 200% 100%;
+            animation: sparkleSlide 3s linear infinite;
+        }
+
+        /* Level 7 has orange/fire colored sparkle */
+        .level-7 .child-navbar::after,
+        .level-7 .child-bottom-nav::before {
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(255, 107, 53, 0.8) 20%,
+                rgba(255, 215, 0, 0.9) 50%,
+                rgba(255, 107, 53, 0.8) 80%,
+                transparent 100%);
+            background-size: 200% 100%;
+        }
+
+        @keyframes sparkleSlide {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Make navbar/footer position relative for ::after */
+        .level-5 .child-navbar,
+        .level-6 .child-navbar,
+        .level-7 .child-navbar,
+        .level-5 .child-bottom-nav,
+        .level-6 .child-bottom-nav,
+        .level-7 .child-bottom-nav {
+            position: relative;
+        }
+        .level-5 .child-bottom-nav,
+        .level-6 .child-bottom-nav,
+        .level-7 .child-bottom-nav {
+            position: fixed;
+        }
+    </style>
+</head>
+<body class="child-portal level-<?= $levelNumber ?>" style="--level-color: <?= $levelThemeColor ?>; --level-color-rgb: <?= implode(',', array_map('hexdec', str_split(ltrim($levelThemeColor, '#'), 2))) ?>">
+    <nav class="child-navbar">
+        <div class="d-flex justify-content-between align-items-center" style="max-width: 800px; margin: 0 auto;">
+            <a href="<?= $baseUrl ?>/my" class="d-flex align-items-center gap-2 text-decoration-none" style="color: inherit;">
+                <span class="level-icon-header"><?= $levelIcon ?></span>
+                <span style="font-family: 'DM Serif Display', serif; font-size: 1.125rem;"><?= $lang->t('app_name') ?></span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted d-none d-sm-inline"><?= htmlspecialchars($_SESSION['child_nickname'] ?? '') ?></span>
+                <div class="btn-group btn-group-sm">
+                    <a href="<?= $baseUrl ?>/language/ka" class="btn btn-<?= $lang->getLocale() === 'ka' ? 'primary' : 'outline-secondary' ?>" title="ქართული">
+                        GE
+                    </a>
+                    <a href="<?= $baseUrl ?>/language/en" class="btn btn-<?= $lang->getLocale() === 'en' ? 'primary' : 'outline-secondary' ?>" title="English">
+                        EN
+                    </a>
+                </div>
+                <a href="<?= $baseUrl ?>/child-logout" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-box-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="child-content">
+        <?php include __DIR__ . '/../partials/flash.phtml'; ?>
+        <?= $content ?>
+    </main>
+
+    <nav class="child-bottom-nav">
+        <div class="d-flex" style="max-width: 500px; margin: 0 auto;">
+            <?php $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); ?>
+            <div class="nav-item">
+                <a href="<?= $baseUrl ?>/my" class="nav-link <?= $currentPath === '/kid-points/public/my' || $currentPath === '/my' ? 'active' : '' ?>">
+                    <i class="bi bi-house-fill"></i>
+                    <span><?= $useGameTerms ? $lang->t('home_game') : $lang->t('home') ?></span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="<?= $baseUrl ?>/my/goals" class="nav-link <?= strpos($currentPath, '/goals') !== false ? 'active' : '' ?>">
+                    <i class="bi bi-bullseye"></i>
+                    <span><?= $useGameTerms ? $lang->t('goals_game') : $lang->t('goals') ?></span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="<?= $baseUrl ?>/my/rewards" class="nav-link <?= strpos($currentPath, '/rewards') !== false ? 'active' : '' ?>">
+                    <i class="bi bi-gift-fill"></i>
+                    <span><?= $useGameTerms ? $lang->t('rewards_game') : $lang->t('rewards') ?></span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="<?= $baseUrl ?>/my/points-history" class="nav-link <?= strpos($currentPath, '/points-history') !== false ? 'active' : '' ?>">
+                    <i class="bi bi-clock-history"></i>
+                    <span><?= $useGameTerms ? $lang->t('history_game') : $lang->t('history') ?></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= $baseUrl ?>/assets/js/game-effects.js"></script>
+    <script src="<?= $baseUrl ?>/assets/js/pet-mascot.js"></script>
+    <script>
+        // Initialize gamification systems when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Bootstrap tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl, { html: true });
+            });
+
+            // Initialize celebration system
+            if (window.gameCelebration) {
+                window.gameCelebration.setCelebrationStyle('<?= $childGamification['celebration_style'] ?>');
+                window.gameCelebration.soundEnabled = <?= $childGamification['sound_enabled'] ? 'true' : 'false' ?>;
+                window.gameCelebration.initSurprises();
+            }
+
+            // Initialize pet mascot
+            <?php if ($childGamification['pet_enabled']): ?>
+            window.petMascot = new PetMascot({
+                creature: '<?= $childGamification['pet_creature'] ?>',
+                skin: '<?= $childGamification['pet_skin'] ?>',
+                enabled: true
+            });
+            <?php endif; ?>
+        });
+    </script>
+</body>
+</html>

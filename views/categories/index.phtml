@@ -1,0 +1,370 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+?>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><?= $lang->t('categories') ?></h2>
+        <p class="text-muted mb-0"><?= $lang->t('categories_desc') ?></p>
+    </div>
+    <a href="<?= $baseUrl ?>/categories/create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i><?= $lang->t('add_category') ?>
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="GET" action="<?= $baseUrl ?>/categories" class="d-flex align-items-center gap-3">
+            <label class="mb-0 text-muted"><?= $lang->t('type') ?>:</label>
+            <select name="type" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                <option value=""><?= $lang->t('all') ?></option>
+                <option value="positive" <?= ($typeFilter ?? '') === 'positive' ? 'selected' : '' ?>><?= $lang->t('positive') ?></option>
+                <option value="negative" <?= ($typeFilter ?? '') === 'negative' ? 'selected' : '' ?>><?= $lang->t('negative') ?></option>
+            </select>
+            <?php if (!empty($typeFilter)): ?>
+                <a href="<?= $baseUrl ?>/categories" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            <?php endif; ?>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-modern mb-0" id="categoriesTable">
+            <thead>
+                <tr>
+                    <th><?= $lang->t('icon') ?></th>
+                    <th><?= $lang->t('category_name') ?></th>
+                    <th><?= $lang->t('default_points') ?></th>
+                    <th><?= $lang->t('type') ?></th>
+                    <th><?= $lang->t('sort_order') ?></th>
+                    <th><?= $lang->t('active') ?></th>
+                    <th class="text-end"><?= $lang->t('actions') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if (empty($categories)): ?>
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-bookmark-star" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <p class="mb-0 mt-2"><?= $lang->t('no_categories_yet') ?></p>
+                    </td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($categories as $cat): ?>
+                <tr data-id="<?= $cat['id'] ?>">
+                    <td>
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                              style="width: 40px; height: 40px; background: <?= $cat['type'] === 'positive' ? 'var(--positive-bg)' : 'var(--negative-bg)' ?>;">
+                            <i class="bi <?= htmlspecialchars($cat['icon']) ?>"
+                               style="font-size: 1.2rem; color: <?= $cat['type'] === 'positive' ? 'var(--positive)' : 'var(--negative)' ?>;"></i>
+                        </span>
+                    </td>
+                    <td class="editable-cell cell-name"
+                        data-field="name"
+                        data-name="<?= htmlspecialchars($cat['name']) ?>"
+                        data-name-ka="<?= htmlspecialchars($cat['name_ka'] ?? '') ?>">
+                        <span class="display-value fw-bold"><?= htmlspecialchars($cat[$nameField] ?? $cat['name']) ?></span>
+                        <div class="edit-inputs" style="display: none;">
+                            <input type="text" class="form-control form-control-sm mb-1 input-name"
+                                   placeholder="<?= $lang->t('english') ?>" value="<?= htmlspecialchars($cat['name']) ?>">
+                            <input type="text" class="form-control form-control-sm input-name-ka"
+                                   placeholder="<?= $lang->t('georgian') ?>" value="<?= htmlspecialchars($cat['name_ka'] ?? '') ?>">
+                        </div>
+                    </td>
+                    <td class="editable-cell cell-points"
+                        data-field="default_points"
+                        data-value="<?= $cat['default_points'] ?>">
+                        <span class="display-value <?= $cat['default_points'] >= 0 ? 'points-positive' : 'points-negative' ?> fw-bold">
+                            <?= ($cat['default_points'] >= 0 ? '+' : '') . $cat['default_points'] ?>
+                        </span>
+                        <div class="edit-inputs" style="display: none;">
+                            <input type="number" class="form-control form-control-sm input-points"
+                                   style="width: 80px;" value="<?= $cat['default_points'] ?>">
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-<?= $cat['type'] === 'positive' ? 'success' : 'danger' ?>">
+                            <?= $lang->t($cat['type']) ?>
+                        </span>
+                    </td>
+                    <td class="text-muted"><?= $cat['sort_order'] ?></td>
+                    <td>
+                        <?php if ($cat['is_active']): ?>
+                            <i class="bi bi-check-circle-fill" style="color: var(--positive); font-size: 1.2rem;"></i>
+                        <?php else: ?>
+                            <i class="bi bi-x-circle" style="color: var(--navy-light); opacity: 0.5; font-size: 1.2rem;"></i>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="<?= $baseUrl ?>/categories/<?= $cat['id'] ?>/edit" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="<?= $baseUrl ?>/categories/<?= $cat['id'] ?>/delete" class="d-inline">
+                                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                                <button class="btn btn-sm btn-outline-danger" data-confirm="<?= $lang->t('confirm_delete') ?>">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.editable-cell {
+    cursor: pointer;
+    min-width: 120px;
+}
+.editable-cell:hover .display-value {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: -2px -6px;
+}
+.editable-cell.editing {
+    cursor: default;
+}
+.editable-cell .edit-inputs input {
+    font-size: 0.875rem;
+}
+.cell-name {
+    min-width: 180px;
+}
+</style>
+
+<script>
+const csrfToken = '<?= $csrfToken ?>';
+const baseUrl = '<?= $baseUrl ?>';
+const currentLocale = '<?= $locale ?>';
+
+let currentEditingRow = null;
+
+// Click on editable cell to enter edit mode
+document.querySelectorAll('.editable-cell').forEach(cell => {
+    cell.addEventListener('click', async function(e) {
+        if (this.classList.contains('editing')) return;
+
+        const row = this.closest('tr');
+
+        // Enter edit mode for this row (will handle saving previous row)
+        await enterEditMode(row);
+    });
+});
+
+async function enterEditMode(row) {
+    if (row.classList.contains('editing')) return;
+
+    // Ensure no other row is in edit mode - save and exit any existing editing row
+    if (currentEditingRow && currentEditingRow !== row) {
+        await saveRow(currentEditingRow);
+    }
+
+    // Double check all rows are not in editing mode
+    document.querySelectorAll('#categoriesTable tbody tr.editing').forEach(editingRow => {
+        if (editingRow !== row) {
+            exitEditMode(editingRow);
+        }
+    });
+
+    currentEditingRow = row;
+    row.classList.add('editing');
+
+    // Show all edit inputs in this row
+    row.querySelectorAll('.editable-cell').forEach(cell => {
+        cell.classList.add('editing');
+        cell.querySelector('.display-value').style.display = 'none';
+        cell.querySelector('.edit-inputs').style.display = 'block';
+    });
+
+    // Focus first input
+    const firstInput = row.querySelector('.edit-inputs input');
+    if (firstInput) {
+        firstInput.focus();
+        firstInput.select();
+    }
+}
+
+function exitEditMode(row) {
+    row.classList.remove('editing');
+    currentEditingRow = null;
+
+    row.querySelectorAll('.editable-cell').forEach(cell => {
+        cell.classList.remove('editing');
+        cell.querySelector('.display-value').style.display = '';
+        cell.querySelector('.edit-inputs').style.display = 'none';
+    });
+}
+
+async function saveRow(row) {
+    const rowId = row.dataset.id;
+    const nameCell = row.querySelector('.cell-name');
+    const pointsCell = row.querySelector('.cell-points');
+
+    const newName = nameCell.querySelector('.input-name').value;
+    const newNameKa = nameCell.querySelector('.input-name-ka').value;
+    const newPoints = parseInt(pointsCell.querySelector('.input-points').value) || 0;
+
+    const oldName = nameCell.dataset.name;
+    const oldNameKa = nameCell.dataset.nameKa;
+    const oldPoints = parseInt(pointsCell.dataset.value);
+
+    // Check if anything changed
+    const nameChanged = newName !== oldName || newNameKa !== oldNameKa;
+    const pointsChanged = newPoints !== oldPoints;
+
+    if (nameChanged || pointsChanged) {
+        try {
+            // Save name if changed
+            if (newName !== oldName) {
+                await fetch(`${baseUrl}/categories/${rowId}/inline-update`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `_csrf=${encodeURIComponent(csrfToken)}&field=name&value=${encodeURIComponent(newName)}`
+                });
+            }
+
+            // Save name_ka if changed
+            if (newNameKa !== oldNameKa) {
+                await fetch(`${baseUrl}/categories/${rowId}/inline-update`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `_csrf=${encodeURIComponent(csrfToken)}&field=name_ka&value=${encodeURIComponent(newNameKa)}`
+                });
+            }
+
+            // Save points if changed
+            if (pointsChanged) {
+                await fetch(`${baseUrl}/categories/${rowId}/inline-update`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `_csrf=${encodeURIComponent(csrfToken)}&field=default_points&value=${newPoints}`
+                });
+            }
+
+            // Update data attributes and display values
+            nameCell.dataset.name = newName;
+            nameCell.dataset.nameKa = newNameKa;
+            nameCell.querySelector('.display-value').textContent =
+                currentLocale === 'ka' && newNameKa ? newNameKa : newName;
+
+            pointsCell.dataset.value = newPoints;
+            const pointsDisplay = pointsCell.querySelector('.display-value');
+            pointsDisplay.textContent = (newPoints >= 0 ? '+' : '') + newPoints;
+            pointsDisplay.className = `display-value ${newPoints >= 0 ? 'points-positive' : 'points-negative'} fw-bold`;
+
+        } catch (e) {
+            console.error('Error saving:', e);
+        }
+    }
+
+    exitEditMode(row);
+}
+
+// Get input identifier for focusing same input in next/prev row
+function getInputIdentifier(input) {
+    if (input.classList.contains('input-name')) return 'input-name';
+    if (input.classList.contains('input-name-ka')) return 'input-name-ka';
+    if (input.classList.contains('input-points')) return 'input-points';
+    return 'input-name';
+}
+
+// Navigate to adjacent row
+async function navigateToRow(currentRow, direction, inputClass) {
+    const rows = Array.from(document.querySelectorAll('#categoriesTable tbody tr[data-id]'));
+    const currentIndex = rows.indexOf(currentRow);
+    const targetIndex = direction === 'down' ? currentIndex + 1 : currentIndex - 1;
+
+    if (targetIndex >= 0 && targetIndex < rows.length) {
+        await saveRow(currentRow);
+        const targetRow = rows[targetIndex];
+        enterEditMode(targetRow);
+
+        // Focus the same input type
+        const targetInput = targetRow.querySelector('.' + inputClass);
+        if (targetInput) {
+            targetInput.focus();
+            targetInput.select();
+        }
+    }
+}
+
+// Handle blur on inputs - save when focus leaves the row
+document.querySelectorAll('.edit-inputs input').forEach(input => {
+    input.addEventListener('blur', function(e) {
+        const row = this.closest('tr');
+        // Small delay to check if focus moved to another input in same row
+        setTimeout(() => {
+            // Check if focus is still within this row
+            const activeEl = document.activeElement;
+            const focusInSameRow = row && row.contains(activeEl);
+            const focusInAnotherEditableRow = activeEl && activeEl.closest && activeEl.closest('tr[data-id]');
+
+            // If focus moved outside this row (and not to another editable row which will handle it)
+            if (row && row.classList.contains('editing') && !focusInSameRow && !focusInAnotherEditableRow) {
+                saveRow(row);
+            }
+        }, 150);
+    });
+
+    // Handle keyboard shortcuts
+    input.addEventListener('keydown', function(e) {
+        const row = this.closest('tr');
+
+        // Ctrl+Arrow Down/Up - navigate to next/prev row
+        if (e.ctrlKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            e.preventDefault();
+            const direction = e.key === 'ArrowDown' ? 'down' : 'up';
+            const inputClass = getInputIdentifier(this);
+            navigateToRow(row, direction, inputClass);
+            return;
+        }
+
+        // Enter key to save
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveRow(row);
+        }
+
+        // Escape to cancel
+        if (e.key === 'Escape') {
+            // Reset values
+            const nameCell = row.querySelector('.cell-name');
+            const pointsCell = row.querySelector('.cell-points');
+            nameCell.querySelector('.input-name').value = nameCell.dataset.name;
+            nameCell.querySelector('.input-name-ka').value = nameCell.dataset.nameKa;
+            pointsCell.querySelector('.input-points').value = pointsCell.dataset.value;
+            exitEditMode(row);
+        }
+    });
+});
+
+// Click outside to save
+document.addEventListener('click', function(e) {
+    if (currentEditingRow && !currentEditingRow.contains(e.target)) {
+        // Check if clicking on another editable cell - enterEditMode will handle it
+        const clickedEditableCell = e.target.closest('.editable-cell');
+        if (!clickedEditableCell) {
+            saveRow(currentEditingRow);
+        }
+    }
+});
+
+// Handle tab into editable cells - enter edit mode
+document.querySelectorAll('.edit-inputs input').forEach(input => {
+    input.addEventListener('focus', function(e) {
+        const row = this.closest('tr');
+        if (row && !row.classList.contains('editing')) {
+            enterEditMode(row);
+        }
+    });
+});
+</script>

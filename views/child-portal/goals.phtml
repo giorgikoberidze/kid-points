@@ -1,0 +1,302 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+$useGameTerms = ($settings['use_game_terms'] ?? '0') === '1';
+$ptsLabel = $useGameTerms ? $lang->t('pts_game') : $lang->t('pts');
+$goalsTitle = $useGameTerms ? $lang->t('my_goals_game') : $lang->t('my_goals');
+$createTitle = $useGameTerms ? $lang->t('create_goal_game') : $lang->t('create_goal');
+$activeTitle = $useGameTerms ? $lang->t('active_goals_game') : $lang->t('active_goals');
+$completedTitle = $useGameTerms ? $lang->t('completed_goals_game') : $lang->t('completed_goals');
+$noActiveMsg = $useGameTerms ? $lang->t('no_active_goals_game') : $lang->t('no_active_goals');
+?>
+
+<!-- Mission Board Header -->
+<div class="mission-board-header">
+    <div class="d-flex align-items-center gap-3">
+        <div class="mission-icon">
+            <i class="ph-fill ph-flag-checkered"></i>
+        </div>
+        <div>
+            <h4 class="mb-0" style="font-family: 'DM Serif Display', serif;"><?= $goalsTitle ?></h4>
+            <p class="text-muted mb-0 small"><?= count($activeGoals) ?> <?= $useGameTerms ? $lang->t('active_missions_count') : $lang->t('active_goals_count') ?></p>
+        </div>
+    </div>
+    <div class="wallet-display">
+        <div class="wallet-icon">
+            <i class="ph-fill ph-coin"></i>
+        </div>
+        <div class="wallet-info">
+            <span class="wallet-amount"><?= number_format($child['points_balance']) ?></span>
+            <span class="wallet-label"><?= $useGameTerms ? $lang->t('available') : $ptsLabel ?></span>
+        </div>
+    </div>
+</div>
+
+<!-- Create New Mission -->
+<div class="mission-card mb-4" style="border-color: var(--accent-primary);">
+    <div class="mission-content">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="ph-fill ph-plus-circle" style="font-size: 1.5rem; color: var(--accent-primary);"></i>
+            <h6 class="mb-0"><?= $createTitle ?></h6>
+        </div>
+        <form action="<?= $baseUrl ?>/my/goals" method="POST">
+            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label"><?= $useGameTerms ? $lang->t('goal_name_game') : $lang->t('goal_name') ?> *</label>
+                    <input type="text" name="name" class="form-control" required maxlength="100"
+                           placeholder="<?= $lang->t('goal_name_placeholder') ?>">
+                </div>
+                <div class="col-6">
+                    <label class="form-label"><?= $lang->t('target_points') ?> *</label>
+                    <input type="number" name="target_points" id="createTargetPoints" class="form-control" required min="1" max="100000"
+                           placeholder="100" onchange="updateCreateMoney()" oninput="updateCreateMoney()">
+                </div>
+                <div class="col-6">
+                    <label class="form-label"><?= $lang->t('target_amount') ?> (<?= $currencySymbol ?>)</label>
+                    <input type="number" id="createTargetMoney" class="form-control" min="0.1" step="0.1"
+                           placeholder="10" onchange="updateCreatePoints()" oninput="updateCreatePoints()">
+                </div>
+                <div class="col-12">
+                    <label class="form-label"><?= $lang->t('deadline') ?> <small class="text-muted">(<?= $lang->t('optional') ?>)</small></label>
+                    <input type="date" name="deadline" class="form-control" min="<?= date('Y-m-d') ?>">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-game w-100">
+                        <i class="ph ph-plus me-1"></i><?= $createTitle ?>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Active Missions -->
+<div class="mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="ph-fill ph-list-checks" style="font-size: 1.25rem; color: var(--accent-info);"></i>
+        <h6 class="mb-0"><?= $activeTitle ?> (<?= count($activeGoals) ?>)</h6>
+    </div>
+
+    <?php if (empty($activeGoals)): ?>
+        <div class="mission-card" style="opacity: 0.7;">
+            <div class="mission-content text-center py-4">
+                <i class="ph ph-target" style="font-size: 3rem; color: var(--accent-info); opacity: 0.5;"></i>
+                <p class="text-muted mb-0 mt-2"><?= $noActiveMsg ?></p>
+            </div>
+        </div>
+    <?php else: ?>
+        <?php foreach ($activeGoals as $goal): ?>
+            <div class="mission-card <?= $goal['progress']['percentage'] >= 100 ? 'mission-complete' : '' ?>">
+                <div class="mission-content">
+                    <div class="mission-header">
+                        <?php $canToggle = !$goal['is_favorite'] || count($activeGoals) > 1; ?>
+                        <form action="<?= $baseUrl ?>/my/goals/<?= $goal['id'] ?>/favorite" method="POST" class="d-inline">
+                            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                            <button type="submit" class="mission-star <?= $goal['is_favorite'] ? 'active' : '' ?>"
+                                    title="<?= $goal['is_favorite'] ? ($canToggle ? $lang->t('remove_favorite') : $lang->t('favorite_goal')) : $lang->t('set_favorite') ?>"
+                                    <?= !$canToggle ? 'disabled style="cursor: not-allowed;"' : '' ?>>
+                                <i class="bi bi-star<?= $goal['is_favorite'] ? '-fill' : '' ?>"></i>
+                            </button>
+                        </form>
+                        <h6 class="mission-name"><?= htmlspecialchars($goal[$nameField] ?? $goal['name']) ?></h6>
+                        <span class="mission-badge"><?= round($goal['progress']['percentage']) ?>%</span>
+                    </div>
+
+                    <div class="mission-progress-track">
+                        <div class="mission-progress-fill" style="width: <?= min(100, $goal['progress']['percentage']) ?>%"></div>
+                        <div class="milestone-markers">
+                            <span class="milestone" style="left: 25%"></span>
+                            <span class="milestone" style="left: 50%"></span>
+                            <span class="milestone" style="left: 75%"></span>
+                            <span class="milestone milestone-end" style="left: 100%">
+                                <i class="ph-fill ph-flag"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mission-footer">
+                        <span class="mission-points">
+                            <?= number_format($child['points_balance']) ?> / <?= number_format($goal['target_points']) ?> <?= $ptsLabel ?>
+                            <span class="text-muted">(<?= $currencySymbol ?><?= number_format($goal['target_points'] / $pointsPerLari, 2) ?>)</span>
+                        </span>
+                        <?php if (!empty($goal['deadline'])): ?>
+                        <span class="mission-deadline <?= $goal['progress']['is_overdue'] ? 'overdue' : ($goal['progress']['days_until_deadline'] <= 3 ? 'urgent' : '') ?>">
+                            <i class="ph ph-clock"></i>
+                            <?php if ($goal['progress']['is_overdue']): ?>
+                                <?= $lang->t('overdue') ?>
+                            <?php else: ?>
+                                <?= $goal['progress']['days_until_deadline'] ?> <?= $lang->t('days_remaining') ?>
+                            <?php endif; ?>
+                        </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($goal['progress']['points_remaining'] > 0): ?>
+                    <div class="text-muted small mt-2">
+                        <i class="ph ph-arrow-right me-1"></i>
+                        <?= number_format($goal['progress']['points_remaining']) ?> <?= $useGameTerms ? $lang->t('points_remaining_game') : $lang->t('points_remaining') ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if ($goal['projected_completion'] && $goal['progress']['percentage'] < 100): ?>
+                    <div class="text-muted small mt-1">
+                        <i class="ph ph-trend-up me-1"></i>
+                        <?= $lang->t('projected_completion') ?>: <?= $lang->formatDate($goal['projected_completion'], 'short') ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="d-flex gap-2 mt-3 pt-3 border-top">
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-game flex-grow-1" data-bs-toggle="modal" data-bs-target="#editGoalModal<?= $goal['id'] ?>">
+                            <i class="ph ph-pencil me-1"></i><?= $lang->t('edit') ?>
+                        </button>
+                        <form action="<?= $baseUrl ?>/my/goals/<?= $goal['id'] ?>/delete" method="POST" class="flex-grow-1 confirm-form"
+                              data-confirm-message="<?= htmlspecialchars($lang->t('confirm_delete_goal')) ?>"
+                              data-confirm-type="danger">
+                            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                            <button type="submit" class="btn btn-sm btn-outline-danger btn-game w-100">
+                                <i class="ph ph-trash me-1"></i><?= $lang->t('delete') ?>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editGoalModal<?= $goal['id'] ?>" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form action="<?= $baseUrl ?>/my/goals/<?= $goal['id'] ?>/update" method="POST">
+                            <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="ph ph-pencil me-2"></i>
+                                    <?= $useGameTerms ? $lang->t('edit_goal_game') : $lang->t('edit_goal') ?>
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label"><?= $useGameTerms ? $lang->t('goal_name_game') : $lang->t('goal_name') ?> *</label>
+                                    <input type="text" name="name" class="form-control" required maxlength="100"
+                                           value="<?= htmlspecialchars($goal['name']) ?>">
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label"><?= $lang->t('target_points') ?> *</label>
+                                        <input type="number" name="target_points" id="editTargetPoints<?= $goal['id'] ?>" class="form-control" required min="1" max="100000"
+                                               value="<?= $goal['target_points'] ?>" onchange="updateEditMoney(<?= $goal['id'] ?>)" oninput="updateEditMoney(<?= $goal['id'] ?>)">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label"><?= $lang->t('target_amount') ?> (<?= $currencySymbol ?>)</label>
+                                        <input type="number" id="editTargetMoney<?= $goal['id'] ?>" class="form-control" min="0.1" step="0.1"
+                                               value="<?= number_format($goal['target_points'] / $pointsPerLari, 2, '.', '') ?>" onchange="updateEditPoints(<?= $goal['id'] ?>)" oninput="updateEditPoints(<?= $goal['id'] ?>)">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><?= $lang->t('deadline') ?></label>
+                                    <input type="date" name="deadline" class="form-control"
+                                           value="<?= $goal['deadline'] ?? '' ?>">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= $lang->t('cancel') ?></button>
+                                <button type="submit" class="btn btn-primary btn-game"><?= $lang->t('save') ?></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</div>
+
+<!-- Completed Missions -->
+<?php if (!empty($completedGoals)): ?>
+<div class="trophy-case">
+    <div class="trophy-case-header">
+        <i class="ph-fill ph-trophy"></i>
+        <h6><?= $completedTitle ?></h6>
+        <span class="trophy-count"><?= count($completedGoals) ?></span>
+    </div>
+    <div class="list-group list-group-flush" style="background: transparent;">
+        <?php foreach ($completedGoals as $goal): ?>
+            <div class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="trophy-icon-wrapper" style="width: 40px; height: 40px;">
+                        <div class="trophy-glow"></div>
+                        <i class="bi bi-trophy-fill" style="color: #fbbf24;"></i>
+                    </div>
+                    <div>
+                        <span class="fw-semibold"><?= htmlspecialchars($goal[$nameField] ?? $goal['name']) ?></span>
+                        <small class="text-muted d-block">
+                            <?= number_format($goal['target_points']) ?> <?= $ptsLabel ?>
+                            &bull; <?= $lang->t('completed_on') ?> <?= $lang->formatDate($goal['completed_at'], 'short') ?>
+                        </small>
+                    </div>
+                </div>
+                <span class="badge bg-success"><?= $lang->t('completed') ?></span>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<script>
+const pointsPerLari = <?= $pointsPerLari ?>;
+
+function updateCreateMoney() {
+    const points = document.getElementById('createTargetPoints').value;
+    if (points) {
+        document.getElementById('createTargetMoney').value = (points / pointsPerLari).toFixed(2);
+    }
+}
+
+function updateCreatePoints() {
+    const money = document.getElementById('createTargetMoney').value;
+    if (money) {
+        document.getElementById('createTargetPoints').value = Math.round(money * pointsPerLari);
+    }
+}
+
+function updateEditMoney(id) {
+    const points = document.getElementById('editTargetPoints' + id).value;
+    if (points) {
+        document.getElementById('editTargetMoney' + id).value = (points / pointsPerLari).toFixed(2);
+    }
+}
+
+function updateEditPoints(id) {
+    const money = document.getElementById('editTargetMoney' + id).value;
+    if (money) {
+        document.getElementById('editTargetPoints' + id).value = Math.round(money * pointsPerLari);
+    }
+}
+
+// Handle confirmation dialogs
+document.querySelectorAll('.confirm-form').forEach(form => {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const message = this.dataset.confirmMessage;
+        const type = this.dataset.confirmType || 'warning';
+
+        if (window.gameCelebration) {
+            const confirmed = await window.gameCelebration.confirm({
+                message: message,
+                confirmText: '<?= $lang->t('confirm_yes') ?>',
+                cancelText: '<?= $lang->t('confirm_no') ?>',
+                type: type
+            });
+
+            if (confirmed) {
+                this.submit();
+            }
+        } else {
+            if (confirm(message)) {
+                this.submit();
+            }
+        }
+    });
+});
+</script>

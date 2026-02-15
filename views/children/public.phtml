@@ -1,0 +1,191 @@
+<?php
+$locale = $lang->getLocale();
+$nameField = $locale === 'ka' ? 'name_ka' : 'name';
+$descField = $locale === 'ka' ? 'description_ka' : 'description';
+?>
+<!DOCTYPE html>
+<html lang="<?= $lang->getLocale() ?>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?> - <?= $lang->t('app_name') ?></title>
+    <link rel="icon" type="image/svg+xml" href="<?= $baseUrl ?>/favicon.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="<?= $baseUrl ?>/assets/css/style.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #FDF8F3 0%, #FFE8E8 50%, #E0F7F5 100%);
+            min-height: 100vh;
+        }
+        body::before {
+            display: none;
+        }
+        .public-hero {
+            padding: 48px 0;
+        }
+        .points-orb {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--coral) 0%, var(--lavender) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            margin: 0 auto 32px;
+            box-shadow: 0 20px 60px rgba(255, 107, 107, 0.4);
+            animation: orbFloat 3s ease-in-out infinite;
+        }
+        @keyframes orbFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .points-orb .big-number {
+            font-family: 'Nunito', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .points-orb .label {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        .money-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            color: var(--navy);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .reward-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="public-view">
+        <!-- Profile Header -->
+        <div class="text-center public-hero">
+            <?php if (!empty($child['photo_path'])): ?>
+                <img src="<?= $baseUrl ?>/<?= htmlspecialchars($child['photo_path']) ?>"
+                     class="rounded-circle shadow-lg mb-4"
+                     style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #fff;">
+            <?php else: ?>
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center shadow-lg mb-4"
+                     style="width: 120px; height: 120px; background: linear-gradient(135deg, var(--coral), var(--lavender)); color: #fff; font-size: 3rem; border: 4px solid #fff;">
+                    <?= mb_substr($child['nickname'] ?? $child['name'], 0, 1) ?>
+                </div>
+            <?php endif; ?>
+
+            <h1 class="child-name mb-4"><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></h1>
+
+            <?php if (!empty($levelProgress['current_level'])): ?>
+            <?php $level = $levelProgress['current_level']; $size = 'lg'; include __DIR__ . '/../partials/level-badge.phtml'; ?>
+            <div class="mb-4"></div>
+            <?php endif; ?>
+
+            <!-- Points Orb -->
+            <?php $orbClass = !empty($levelProgress['current_level']['badge_class']) ? 'themed ' . $levelProgress['current_level']['badge_class'] : ''; ?>
+            <div class="points-orb <?= $orbClass ?>">
+                <div class="big-number"><?= (int)$child['points_balance'] ?></div>
+                <div class="label"><?= $lang->t('points') ?></div>
+            </div>
+
+            <div class="money-badge mb-4">
+                <i class="bi bi-wallet2 me-2"></i>
+                = <?= $currencySymbol ?><?= number_format($child['points_balance'] / max(1, $pointsPerLari), 2) ?>
+            </div>
+
+            <?php if (!empty($levelProgress['current_level']) && !empty($levelProgress['next_level'])): ?>
+            <div class="mb-5" style="max-width: 300px; margin: 0 auto;">
+                <?php include __DIR__ . '/../partials/level-progress.phtml'; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Streaks -->
+        <?php if (!empty($streaks)): ?>
+        <div class="text-center mb-5">
+            <h5 class="fw-bold mb-3" style="color: var(--coral);">
+                <i class="bi bi-fire me-2"></i><?= $lang->t('streaks') ?>
+            </h5>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                <?php foreach ($streaks as $s): ?>
+                <span class="streak-badge" style="font-size: 1rem;">
+                    <i class="bi bi-fire"></i>
+                    <?= htmlspecialchars($locale === 'ka' && !empty($s['category_name_ka']) ? $s['category_name_ka'] : $s['category_name']) ?>: <?= $s['current_count'] ?> <?= $lang->t('days') ?>
+                </span>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Achievements -->
+        <?php if (!empty($achievements)): ?>
+        <div class="mb-5">
+            <h5 class="fw-bold mb-3 text-center" style="color: var(--gold);">
+                <i class="bi bi-trophy-fill me-2"></i><?= $lang->t('achievements') ?>
+            </h5>
+            <div class="row g-3 justify-content-center">
+                <?php foreach ($achievements as $a): ?>
+                <div class="col-4 col-md-3">
+                    <div class="achievement-badge">
+                        <i class="bi <?= $a['icon'] ?>"></i>
+                        <div class="fw-bold" style="font-size: 0.85rem;"><?= htmlspecialchars($a[$nameField] ?? $a['name']) ?></div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Rewards Progress -->
+        <?php if (!empty($rewards)): ?>
+        <div class="mb-4">
+            <h5 class="fw-bold mb-3 text-center" style="color: var(--mint);">
+                <i class="bi bi-gift-fill me-2"></i><?= $lang->t('rewards') ?> <?= $lang->t('progress') ?>
+            </h5>
+            <?php foreach ($rewards as $r):
+                $pct = min(100, round($child['points_balance'] / max(1, $r['point_cost']) * 100));
+            ?>
+            <div class="reward-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold">
+                        <i class="bi <?= $r['icon'] ?> me-2" style="color: var(--mint);"></i>
+                        <?= htmlspecialchars($r[$nameField] ?? $r['name']) ?>
+                    </span>
+                    <span class="badge bg-<?= $pct >= 100 ? 'success' : 'primary' ?>">
+                        <?= $r['point_cost'] ?> <?= $lang->t('pts') ?>
+                    </span>
+                </div>
+                <div class="progress" style="height: 12px; border-radius: 50px; background: var(--cream-dark);">
+                    <div class="progress-bar <?= $pct >= 100 ? 'bg-success' : '' ?>"
+                         style="width: <?= $pct ?>%; border-radius: 50px; background: <?= $pct >= 100 ? '' : 'linear-gradient(90deg, var(--coral), var(--lavender))' ?>;">
+                    </div>
+                </div>
+                <small class="text-muted"><?= $pct ?>%</small>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Footer -->
+        <div class="text-center mt-5 pt-4" style="border-top: 1px solid var(--cream-dark);">
+            <div style="font-family: 'Nunito', sans-serif; font-weight: 700; color: var(--navy); opacity: 0.5;">
+                <i class="bi bi-star-fill me-1"></i><?= $lang->t('app_name') ?>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
