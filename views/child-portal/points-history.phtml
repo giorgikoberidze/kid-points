@@ -100,7 +100,7 @@ $historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('poin
                                     }
                                     ?>
                                     <?php if ($displayNote): ?>
-                                        <small class="text-muted d-block"><?= htmlspecialchars($displayNote) ?></small>
+                                        <small class="text-muted d-block"><?= htmlspecialchars(mb_strlen($displayNote) > 35 ? mb_substr($displayNote, 0, 35) . '...' : $displayNote) ?></small>
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </td>
