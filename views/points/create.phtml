@@ -39,17 +39,12 @@ $nameField = $locale === 'ka' ? 'name_ka' : 'name';
     <div class="row g-3">
         <?php foreach ($positive as $cat): ?>
         <div class="col-6 col-md-4 col-lg-3">
-            <form method="POST" action="<?= $baseUrl ?>/points" class="quick-award-form">
-                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
-                <input type="hidden" name="child_id" value="<?= $child['id'] ?>">
-                <input type="hidden" name="category_id" value="<?= $cat['id'] ?>">
-                <input type="hidden" name="redirect" value="/children/<?= $child['id'] ?>">
-                <button type="submit" class="category-btn positive w-100">
-                    <i class="bi <?= $cat['icon'] ?>"></i>
-                    <div class="fw-semibold"><?= htmlspecialchars($cat[$nameField] ?? $cat['name']) ?></div>
-                    <span class="points-badge">+<?= abs($cat['default_points']) ?></span>
-                </button>
-            </form>
+            <button type="button" class="category-btn positive w-100"
+                    onclick="openPointModal(<?= $cat['id'] ?>, '<?= htmlspecialchars($cat[$nameField] ?? $cat['name'], ENT_QUOTES) ?>', '+<?= abs($cat['default_points']) ?>', 'positive')">
+                <i class="bi <?= $cat['icon'] ?>"></i>
+                <div class="fw-semibold"><?= htmlspecialchars($cat[$nameField] ?? $cat['name']) ?></div>
+                <span class="points-badge">+<?= abs($cat['default_points']) ?></span>
+            </button>
         </div>
         <?php endforeach; ?>
     </div>
@@ -67,17 +62,12 @@ $nameField = $locale === 'ka' ? 'name_ka' : 'name';
     <div class="row g-3">
         <?php foreach ($negative as $cat): ?>
         <div class="col-6 col-md-4 col-lg-3">
-            <form method="POST" action="<?= $baseUrl ?>/points" class="quick-award-form">
-                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
-                <input type="hidden" name="child_id" value="<?= $child['id'] ?>">
-                <input type="hidden" name="category_id" value="<?= $cat['id'] ?>">
-                <input type="hidden" name="redirect" value="/children/<?= $child['id'] ?>">
-                <button type="submit" class="category-btn negative w-100">
-                    <i class="bi <?= $cat['icon'] ?>"></i>
-                    <div class="fw-semibold"><?= htmlspecialchars($cat[$nameField] ?? $cat['name']) ?></div>
-                    <span class="points-badge"><?= $cat['default_points'] ?></span>
-                </button>
-            </form>
+            <button type="button" class="category-btn negative w-100"
+                    onclick="openPointModal(<?= $cat['id'] ?>, '<?= htmlspecialchars($cat[$nameField] ?? $cat['name'], ENT_QUOTES) ?>', '<?= $cat['default_points'] ?>', 'negative')">
+                <i class="bi <?= $cat['icon'] ?>"></i>
+                <div class="fw-semibold"><?= htmlspecialchars($cat[$nameField] ?? $cat['name']) ?></div>
+                <span class="points-badge"><?= $cat['default_points'] ?></span>
+            </button>
         </div>
         <?php endforeach; ?>
     </div>
@@ -102,9 +92,21 @@ $nameField = $locale === 'ka' ? 'name_ka' : 'name';
                 <small class="text-muted"><?= $lang->t('use_positive_negative') ?></small>
             </div>
 
-            <div class="mb-4">
-                <label class="form-label"><?= $lang->t('note') ?></label>
+            <div class="mb-3">
+                <label class="form-label"><?= $lang->t('note') ?> <small class="text-muted">(<?= $lang->t('optional') ?>)</small></label>
                 <textarea name="note" class="form-control" rows="2" placeholder="<?= $lang->t('optional_note') ?>"></textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label"><?= $lang->t('add_photo') ?> <small class="text-muted">(<?= $lang->t('optional') ?>)</small></label>
+                <input type="file" class="form-control" accept="image/*" onchange="handleManualPhoto(this)">
+                <input type="hidden" name="image" id="manualImageData">
+                <div id="manualImagePreview" class="mt-2" style="display:none;">
+                    <img src="" class="rounded" style="max-height: 100px;">
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="clearManualPhoto()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary">
@@ -113,3 +115,107 @@ $nameField = $locale === 'ka' ? 'name_ka' : 'name';
         </form>
     </div>
 </div>
+
+<!-- Point Confirmation Modal -->
+<div class="modal fade" id="pointModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pointModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="<?= $baseUrl ?>/points" id="pointModalForm">
+                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                <input type="hidden" name="child_id" value="<?= $child['id'] ?>">
+                <input type="hidden" name="category_id" id="modalCategoryId">
+                <input type="hidden" name="redirect" value="/children/<?= $child['id'] ?>">
+                <input type="hidden" name="image" id="modalImageData">
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <span class="badge fs-5" id="modalPointsBadge"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><?= $lang->t('note') ?> <small class="text-muted">(<?= $lang->t('optional') ?>)</small></label>
+                        <textarea name="note" id="modalNote" class="form-control" rows="2" placeholder="<?= $lang->t('optional_note') ?>"></textarea>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label"><?= $lang->t('add_photo') ?> <small class="text-muted">(<?= $lang->t('optional') ?>)</small></label>
+                        <input type="file" class="form-control" id="modalFileInput" accept="image/*">
+                        <div id="modalImagePreview" class="mt-2" style="display:none;">
+                            <img src="" class="rounded" style="max-height: 150px;">
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="clearModalPhoto()">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i><?= $lang->t('close') ?>
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i><?= $lang->t('save') ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPointModal(categoryId, categoryName, points, type) {
+    document.getElementById('modalCategoryId').value = categoryId;
+    document.getElementById('pointModalTitle').textContent = categoryName;
+    const badge = document.getElementById('modalPointsBadge');
+    badge.textContent = points;
+    badge.className = 'badge fs-5 ' + (type === 'positive' ? 'bg-success' : 'bg-danger');
+
+    // Reset form fields
+    document.getElementById('modalNote').value = '';
+    document.getElementById('modalImageData').value = '';
+    document.getElementById('modalFileInput').value = '';
+    document.getElementById('modalImagePreview').style.display = 'none';
+
+    new bootstrap.Modal(document.getElementById('pointModal')).show();
+}
+
+document.getElementById('modalFileInput').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('modalImageData').value = e.target.result;
+        const preview = document.getElementById('modalImagePreview');
+        preview.querySelector('img').src = e.target.result;
+        preview.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+});
+
+function clearModalPhoto() {
+    document.getElementById('modalImageData').value = '';
+    document.getElementById('modalFileInput').value = '';
+    document.getElementById('modalImagePreview').style.display = 'none';
+}
+
+function handleManualPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('manualImageData').value = e.target.result;
+        const preview = document.getElementById('manualImagePreview');
+        preview.querySelector('img').src = e.target.result;
+        preview.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearManualPhoto() {
+    document.getElementById('manualImageData').value = '';
+    document.querySelector('.card .card-body input[type="file"]').value = '';
+    document.getElementById('manualImagePreview').style.display = 'none';
+}
+</script>

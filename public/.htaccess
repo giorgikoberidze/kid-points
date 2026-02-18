@@ -1,3 +1,6 @@
+php_value post_max_size 20M
+php_value upload_max_filesize 20M
+
 RewriteEngine On
 RewriteBase /
 

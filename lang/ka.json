@@ -489,5 +489,11 @@
     "positivity_great": "შესანიშნავი ქცევა",
     "positivity_excellent": "ბრწყინვალე",
     "positivity_amazing": "საოცარი",
-    "positivity_perfect": "განსაკუთრებული"
+    "positivity_perfect": "განსაკუთრებული",
+
+    "close": "დახურვა",
+    "add_note": "შენიშვნის დამატება",
+    "add_photo": "ფოტოს დამატება",
+    "view_photo": "ფოტოს ნახვა",
+    "confirm_points": "ქულების დადასტურება"
 }

@@ -64,6 +64,7 @@ CREATE TABLE point_transactions (
     category_id INT NULL,
     points INT NOT NULL,
     note TEXT NULL,
+    image LONGTEXT NULL,
     type ENUM('earn','deduct','redeem','adjust','refund') NOT NULL,
     transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     multiplier_value DECIMAL(3,1) NULL,

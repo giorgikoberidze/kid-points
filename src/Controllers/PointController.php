@@ -43,13 +43,14 @@ class PointController extends Controller
         $childId = (int)$this->input('child_id');
         $categoryId = $this->input('category_id');
         $note = $this->input('note');
+        $image = $this->input('image') ?: null;
         $manualPoints = $this->input('manual_points');
 
         $service = new PointService();
         $lang = \App\Core\Lang::getInstance();
 
         if ($categoryId) {
-            $service->awardPoints($childId, (int)$categoryId, $note);
+            $service->awardPoints($childId, (int)$categoryId, $note, $image);
             $message = $lang->t('points_awarded');
             // Check if multiplier was applied
             if (!empty($_SESSION['points_multiplied'])) {
@@ -59,7 +60,7 @@ class PointController extends Controller
             }
             $this->flash('success', $message);
         } elseif ($manualPoints !== null && $manualPoints !== '') {
-            $service->adjustPoints($childId, (int)$manualPoints, $note ?: 'Manual adjustment');
+            $service->adjustPoints($childId, (int)$manualPoints, $note ?: 'Manual adjustment', $image);
             $message = $lang->t('points_awarded');
             // Check if multiplier was applied
             if (!empty($_SESSION['points_multiplied'])) {

@@ -489,5 +489,11 @@
     "positivity_great": "Great behavior",
     "positivity_excellent": "Excellent",
     "positivity_amazing": "Amazing",
-    "positivity_perfect": "Outstanding"
+    "positivity_perfect": "Outstanding",
+
+    "close": "Close",
+    "add_note": "Add Note",
+    "add_photo": "Add Photo",
+    "view_photo": "View Photo",
+    "confirm_points": "Confirm Points"
 }

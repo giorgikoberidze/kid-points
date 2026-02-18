@@ -63,6 +63,7 @@ $historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('poin
                     <tr>
                         <th><?= $lang->t('date') ?></th>
                         <th><?= $lang->t('category') ?></th>
+                        <th class="text-center" style="width:70px;"></th>
                         <th><?= $lang->t('type') ?></th>
                         <th class="text-end"><?= $lang->t('points') ?></th>
                     </tr>
@@ -102,6 +103,18 @@ $historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('poin
                                         <small class="text-muted d-block"><?= htmlspecialchars($displayNote) ?></small>
                                     <?php endif; ?>
                                 <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <?php if (!empty($tx['image'])): ?>
+                                        <img src="<?= $tx['image'] ?>" class="rounded" style="width:28px;height:28px;object-fit:cover;cursor:pointer;" onclick="showTxImage(this.src)" title="<?= $lang->t('view_photo') ?>">
+                                    <?php endif; ?>
+                                    <?php if (!empty($tx['note']) && !in_array($tx['type'], ['redeem', 'refund'])): ?>
+                                        <i class="bi bi-chat-text-fill text-primary" style="cursor:pointer;" data-bs-toggle="popover" data-bs-trigger="click" data-bs-content="<?= htmlspecialchars($tx['note']) ?>" title="<?= $lang->t('note') ?>"></i>
+                                    <?php else: ?>
+                                        <i class="bi bi-chat-text text-muted" style="opacity:0.3;"></i>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td>
                                 <?php
@@ -172,3 +185,27 @@ $historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('poin
         <?php endif; ?>
     <?php endif; ?>
 </div>
+
+<!-- Full-size Image Modal -->
+<div class="modal fade" id="txImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-transparent border-0 shadow-none">
+            <div class="modal-body text-center p-0">
+                <img src="" id="txImageFull" class="img-fluid rounded" style="max-height:80vh;cursor:pointer;" onclick="bootstrap.Modal.getInstance(document.getElementById('txImageModal')).hide()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTxImage(src) {
+    document.getElementById('txImageFull').src = src;
+    new bootstrap.Modal(document.getElementById('txImageModal')).show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function(el) {
+        new bootstrap.Popover(el, { trigger: 'click', html: false });
+    });
+});
+</script>

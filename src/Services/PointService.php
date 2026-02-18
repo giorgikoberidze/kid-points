@@ -14,7 +14,7 @@ class PointService
         $this->db = Database::getInstance();
     }
 
-    public function awardPoints(int $childId, int $categoryId, ?string $note = null): int
+    public function awardPoints(int $childId, int $categoryId, ?string $note = null, ?string $image = null): int
     {
         $category = (new BehaviorCategory())->find($categoryId);
         if (!$category) return 0;
@@ -50,9 +50,9 @@ class PointService
         $this->db->beginTransaction();
         try {
             $this->db->query(
-                "INSERT INTO point_transactions (child_id, category_id, points, note, type, transaction_date, multiplier_value, bonus_points)
-                 VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)",
-                [$childId, $categoryId, $finalPoints, $note, $type, $multiplierValue, $bonusPoints]
+                "INSERT INTO point_transactions (child_id, category_id, points, note, image, type, transaction_date, multiplier_value, bonus_points)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?)",
+                [$childId, $categoryId, $finalPoints, $note, $image, $type, $multiplierValue, $bonusPoints]
             );
             $txId = (int)$this->db->lastInsertId();
 
@@ -90,7 +90,7 @@ class PointService
         }
     }
 
-    public function adjustPoints(int $childId, int $points, string $note): int
+    public function adjustPoints(int $childId, int $points, string $note, ?string $image = null): int
     {
         // Check for active multiplier (only for positive adjustments)
         $multiplierValue = null;
@@ -119,9 +119,9 @@ class PointService
         $this->db->beginTransaction();
         try {
             $this->db->query(
-                "INSERT INTO point_transactions (child_id, points, note, type, transaction_date, multiplier_value, bonus_points)
-                 VALUES (?, ?, ?, 'adjust', NOW(), ?, ?)",
-                [$childId, $finalPoints, $note, $multiplierValue, $bonusPoints]
+                "INSERT INTO point_transactions (child_id, points, note, image, type, transaction_date, multiplier_value, bonus_points)
+                 VALUES (?, ?, ?, ?, 'adjust', NOW(), ?, ?)",
+                [$childId, $finalPoints, $note, $image, $multiplierValue, $bonusPoints]
             );
             $txId = (int)$this->db->lastInsertId();
             (new Child())->updateBalance($childId);

@@ -372,22 +372,45 @@ endif;
         <div class="list-group list-group-flush">
             <?php foreach ($transactions as $tx): ?>
                 <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
+                    <div class="d-flex align-items-center flex-grow-1 min-width-0">
                         <?php if (!empty($tx['category_icon'])): ?>
                             <i class="bi <?= $tx['category_icon'] ?> me-2"></i>
                         <?php else: ?>
                             <i class="ph ph-arrows-left-right me-2"></i>
                         <?php endif; ?>
-                        <span><?= htmlspecialchars($locale === 'ka' && !empty($tx['category_name_ka']) ? $tx['category_name_ka'] : ($tx['category_name'] ?? $lang->t('adjustment'))) ?></span>
-                        <small class="text-muted d-block d-md-inline ms-md-2"><?= $lang->formatDate($tx['transaction_date'], 'month_day') ?></small>
+                        <div class="min-width-0">
+                            <span><?= htmlspecialchars($locale === 'ka' && !empty($tx['category_name_ka']) ? $tx['category_name_ka'] : ($tx['category_name'] ?? $lang->t('adjustment'))) ?></span>
+                            <small class="text-muted d-block d-md-inline ms-md-2"><?= $lang->formatDate($tx['transaction_date'], 'month_day') ?></small>
+                        </div>
                     </div>
-                    <span class="<?= $tx['points'] >= 0 ? 'points-positive' : 'points-negative' ?> fw-bold">
-                        <?= ($tx['points'] >= 0 ? '+' : '') . $tx['points'] ?>
-                    </span>
+                    <div class="d-flex align-items-center gap-2 ms-2">
+                        <?php if (!empty($tx['image'])): ?>
+                            <img src="<?= $tx['image'] ?>" class="rounded tx-thumb" style="width:32px;height:32px;object-fit:cover;cursor:pointer;" onclick="showTxImage(this.src)" title="<?= $lang->t('view_photo') ?>">
+                        <?php endif; ?>
+                        <?php if (!empty($tx['note']) && !in_array($tx['type'], ['redeem', 'refund'])): ?>
+                            <i class="bi bi-chat-text-fill text-primary" style="cursor:pointer;font-size:1rem;" onclick="showTxNote(this)" data-bs-toggle="popover" data-bs-trigger="click" data-bs-content="<?= htmlspecialchars($tx['note']) ?>" title="<?= $lang->t('note') ?>"></i>
+                        <?php else: ?>
+                            <i class="bi bi-chat-text text-muted" style="opacity:0.3;font-size:1rem;"></i>
+                        <?php endif; ?>
+                        <span class="<?= $tx['points'] >= 0 ? 'points-positive' : 'points-negative' ?> fw-bold ms-1">
+                            <?= ($tx['points'] >= 0 ? '+' : '') . $tx['points'] ?>
+                        </span>
+                    </div>
                 </div>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
+</div>
+
+<!-- Full-size Image Modal -->
+<div class="modal fade" id="txImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-transparent border-0 shadow-none">
+            <div class="modal-body text-center p-0">
+                <img src="" id="txImageFull" class="img-fluid rounded" style="max-height:80vh;cursor:pointer;" onclick="bootstrap.Modal.getInstance(document.getElementById('txImageModal')).hide()">
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php if (!empty($levelUp)): ?>
@@ -405,3 +428,16 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <?php endif; ?>
+
+<script>
+function showTxImage(src) {
+    document.getElementById('txImageFull').src = src;
+    new bootstrap.Modal(document.getElementById('txImageModal')).show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function(el) {
+        new bootstrap.Popover(el, { trigger: 'click', html: false });
+    });
+});
+</script>
