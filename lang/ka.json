@@ -498,5 +498,10 @@
     "confirm_points": "ქულების დადასტურება",
     "delete_transaction": "ტრანზაქციის წაშლა",
     "confirm_delete_transaction": "წავშალოთ ეს ტრანზაქცია? ეფექტი სრულად შებრუნდება.",
-    "transaction_deleted": "ტრანზაქცია წარმატებით წაიშალა."
+    "transaction_deleted": "ტრანზაქცია წარმატებით წაიშალა.",
+
+    "chest_note_daily": "დღის სკივრი",
+    "chest_note_sunday": "კვირის ოქროს სკივრი",
+    "chest_note_bonus": "ბონუს სკივრის ჯილდო",
+    "goal_completion_prefix": "მიზნის დასრულება:"
 }

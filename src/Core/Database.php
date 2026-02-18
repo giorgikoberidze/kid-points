@@ -19,6 +19,10 @@ class Database
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
+            $appConfig = require __DIR__ . '/../../config/app.php';
+            $tz = (new \DateTimeZone($appConfig['timezone']))->getOffset(new \DateTime()) / 3600;
+            $tzStr = sprintf('%+03d:00', $tz);
+            $this->pdo->exec("SET time_zone = '{$tzStr}'");
         } catch (PDOException $e) {
             die('Database connection failed: ' . $e->getMessage());
         }

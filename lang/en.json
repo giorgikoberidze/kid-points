@@ -498,5 +498,10 @@
     "confirm_points": "Confirm Points",
     "delete_transaction": "Delete Transaction",
     "confirm_delete_transaction": "Delete this transaction? This will fully reverse its effects.",
-    "transaction_deleted": "Transaction deleted successfully."
+    "transaction_deleted": "Transaction deleted successfully.",
+
+    "chest_note_daily": "Daily Chest",
+    "chest_note_sunday": "Sunday Golden Chest",
+    "chest_note_bonus": "Bonus Chest Reward",
+    "goal_completion_prefix": "Goal Completion:"
 }

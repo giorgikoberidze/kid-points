@@ -2,6 +2,28 @@
 $locale = $lang->getLocale();
 $nameField = $locale === 'ka' ? 'name_ka' : 'name';
 $descField = $locale === 'ka' ? 'description_ka' : 'description';
+
+// Note translation helper for chest/level-up/goal notes stored as English in DB
+$_noteMap = [
+    'Daily Chest' => $lang->t('chest_note_daily'),
+    'Sunday Golden Chest' => $lang->t('chest_note_sunday'),
+    'Bonus Chest Reward' => $lang->t('chest_note_bonus'),
+];
+$_levelRows = \App\Core\Database::getInstance()->query("SELECT name, name_ka FROM levels")->fetchAll();
+$_levelMap = [];
+foreach ($_levelRows as $_l) { $_levelMap[$_l['name']] = $_l['name_ka'] ?? $_l['name']; }
+$_translateNote = function(?string $note) use ($_noteMap, $_levelMap, $locale, $lang): string {
+    if (!$note) return '';
+    if (isset($_noteMap[$note])) return $_noteMap[$note];
+    if (isset($_levelMap[$note])) {
+        $name = ($locale === 'ka' && !empty($_levelMap[$note])) ? $_levelMap[$note] : $note;
+        return $lang->t('levelup_bonus_prefix') . ' ' . $name;
+    }
+    if (strpos($note, 'Goal Completion: ') === 0) {
+        return $lang->t('goal_completion_prefix') . ' ' . substr($note, 17);
+    }
+    return $note;
+};
 ?>
 <div class="row g-4 mb-5">
     <!-- Child Profile Card -->
@@ -578,15 +600,12 @@ function getActivityBadgeColor(string $action): string {
                         if (($tx['type'] === 'redeem' || $tx['type'] === 'refund') && !empty($tx['reward_name'])) {
                             $displayNote = ($locale === 'ka' && !empty($tx['reward_name_ka'])) ? $tx['reward_name_ka'] : $tx['reward_name'];
                         } elseif (!empty($tx['note'])) {
-                            $displayNote = $tx['note'];
+                            $displayNote = $_translateNote($tx['note']);
                             // Handle old data - strip English prefixes
                             if ($tx['type'] === 'redeem' || $tx['type'] === 'refund') {
                                 $displayNote = preg_replace('/^Redeemed:\s*/', '', $displayNote);
                                 $displayNote = preg_replace('/^Refund:\s*/', '', $displayNote);
                                 $displayNote = preg_replace('/\s*\(cancelled\)$/', '', $displayNote);
-                            } elseif (preg_match('/^Level-up bonus:\s*/', $displayNote)) {
-                                $displayNote = preg_replace('/^Level-up bonus:\s*/', '', $displayNote);
-                                $displayNote = $lang->t('levelup_bonus_prefix') . ' ' . $displayNote;
                             }
                         }
                         echo htmlspecialchars($displayNote);
@@ -641,25 +660,23 @@ window.langStrings = {
                     <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
 
                     <p class="text-muted mb-4">
-                        Award a special bonus chest to <strong><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></strong>.
+                        <?= $lang->t('award_bonus_chest') ?>: <strong><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></strong>
                     </p>
 
                     <div class="mb-3">
                         <label class="form-label"><?= $lang->t('chest_reward') ?> (XP)</label>
                         <input type="number" name="reward" class="form-control" value="50" min="0" max="10000">
-                        <small class="text-muted">XP points to award with the chest</small>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label"><?= $lang->t('sunday_chest_multiplier') ?></label>
+                        <label class="form-label"><?= $lang->t('multiplier') ?></label>
                         <select name="multiplier" class="form-select">
-                            <option value="0">No multiplier</option>
-                            <option value="1.5">1.5x (24 hours)</option>
-                            <option value="2">2x (24 hours)</option>
-                            <option value="3">3x (24 hours)</option>
-                            <option value="5">5x (24 hours)</option>
+                            <option value="0"><?= $lang->t('no_active_multiplier') ?></option>
+                            <option value="1.5">1.5x (24 <?= $lang->t('hours_remaining') ?>)</option>
+                            <option value="2">2x (24 <?= $lang->t('hours_remaining') ?>)</option>
+                            <option value="3">3x (24 <?= $lang->t('hours_remaining') ?>)</option>
+                            <option value="5">5x (24 <?= $lang->t('hours_remaining') ?>)</option>
                         </select>
-                        <small class="text-muted">Optional XP multiplier lasting 24 hours</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -689,20 +706,18 @@ window.langStrings = {
                     <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
 
                     <p class="text-muted mb-4">
-                        Grant an XP multiplier to <strong><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></strong>.
-                        All positive points earned will be multiplied.
+                        <?= $lang->t('grant_multiplier') ?>: <strong><?= htmlspecialchars($child['nickname'] ?? $child['name']) ?></strong>
                     </p>
 
                     <?php if ($activeMultiplier): ?>
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle me-2"></i>
-                        This child already has an active <?= $activeMultiplier['multiplier'] ?>x multiplier.
-                        Granting a new one will replace it.
+                        <?= $lang->t('multiplier_active') ?>: <?= $activeMultiplier['multiplier'] ?>x
                     </div>
                     <?php endif; ?>
 
                     <div class="mb-3">
-                        <label class="form-label"><?= $lang->t('grant_multiplier') ?></label>
+                        <label class="form-label"><?= $lang->t('multiplier') ?></label>
                         <select name="multiplier" class="form-select" required>
                             <option value="1.5">1.5x</option>
                             <option value="2" selected>2x</option>
@@ -715,14 +730,14 @@ window.langStrings = {
                     <div class="mb-3">
                         <label class="form-label"><?= $lang->t('multiplier_duration') ?></label>
                         <select name="duration" class="form-select" required>
-                            <option value="1">1 hour</option>
-                            <option value="2">2 hours</option>
-                            <option value="6">6 hours</option>
-                            <option value="12">12 hours</option>
-                            <option value="24" selected>24 hours (1 day)</option>
-                            <option value="48">48 hours (2 days)</option>
-                            <option value="72">72 hours (3 days)</option>
-                            <option value="168">168 hours (1 week)</option>
+                            <option value="1">1 <?= $lang->t('hours_remaining') ?></option>
+                            <option value="2">2 <?= $lang->t('hours_remaining') ?></option>
+                            <option value="6">6 <?= $lang->t('hours_remaining') ?></option>
+                            <option value="12">12 <?= $lang->t('hours_remaining') ?></option>
+                            <option value="24" selected>24 <?= $lang->t('hours_remaining') ?></option>
+                            <option value="48">48 <?= $lang->t('hours_remaining') ?></option>
+                            <option value="72">72 <?= $lang->t('hours_remaining') ?></option>
+                            <option value="168">168 <?= $lang->t('hours_remaining') ?></option>
                         </select>
                     </div>
                 </div>

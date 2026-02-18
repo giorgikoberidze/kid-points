@@ -1,6 +1,28 @@
 <?php
 $locale = $lang->getLocale();
 $nameField = $locale === 'ka' ? 'name_ka' : 'name';
+
+// Note translation helper for chest/level-up/goal notes stored as English in DB
+$_noteMap = [
+    'Daily Chest' => $lang->t('chest_note_daily'),
+    'Sunday Golden Chest' => $lang->t('chest_note_sunday'),
+    'Bonus Chest Reward' => $lang->t('chest_note_bonus'),
+];
+$_levelRows = \App\Core\Database::getInstance()->query("SELECT name, name_ka FROM levels")->fetchAll();
+$_levelMap = [];
+foreach ($_levelRows as $_l) { $_levelMap[$_l['name']] = $_l['name_ka'] ?? $_l['name']; }
+$_translateNote = function(?string $note) use ($_noteMap, $_levelMap, $locale, $lang): string {
+    if (!$note) return '';
+    if (isset($_noteMap[$note])) return $_noteMap[$note];
+    if (isset($_levelMap[$note])) {
+        $name = ($locale === 'ka' && !empty($_levelMap[$note])) ? $_levelMap[$note] : $note;
+        return $lang->t('levelup_bonus_prefix') . ' ' . $name;
+    }
+    if (strpos($note, 'Goal Completion: ') === 0) {
+        return $lang->t('goal_completion_prefix') . ' ' . substr($note, 17);
+    }
+    return $note;
+};
 ?>
 <div class="mb-4">
     <h2 class="mb-1"><?= $lang->t('transaction_history') ?></h2>
@@ -124,15 +146,12 @@ $nameField = $locale === 'ka' ? 'name_ka' : 'name';
                         if (($tx['type'] === 'redeem' || $tx['type'] === 'refund') && !empty($tx['reward_name'])) {
                             $displayNote = ($locale === 'ka' && !empty($tx['reward_name_ka'])) ? $tx['reward_name_ka'] : $tx['reward_name'];
                         } elseif (!empty($tx['note'])) {
-                            $displayNote = $tx['note'];
+                            $displayNote = $_translateNote($tx['note']);
                             // Handle old data - strip English prefixes
                             if ($tx['type'] === 'redeem' || $tx['type'] === 'refund') {
                                 $displayNote = preg_replace('/^Redeemed:\s*/', '', $displayNote);
                                 $displayNote = preg_replace('/^Refund:\s*/', '', $displayNote);
                                 $displayNote = preg_replace('/\s*\(cancelled\)$/', '', $displayNote);
-                            } elseif (preg_match('/^Level-up bonus:\s*/', $displayNote)) {
-                                $displayNote = preg_replace('/^Level-up bonus:\s*/', '', $displayNote);
-                                $displayNote = $lang->t('levelup_bonus_prefix') . ' ' . $displayNote;
                             }
                         }
                         echo htmlspecialchars($displayNote);

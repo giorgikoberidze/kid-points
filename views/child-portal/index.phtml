@@ -4,6 +4,28 @@ $nameField = $locale === 'ka' ? 'name_ka' : 'name';
 $descField = $locale === 'ka' ? 'description_ka' : 'description';
 $useGameTerms = ($settings['use_game_terms'] ?? '0') === '1';
 
+// Note translation helper for chest/level-up/goal notes stored as English in DB
+$_noteMap = [
+    'Daily Chest' => $lang->t('chest_note_daily'),
+    'Sunday Golden Chest' => $lang->t('chest_note_sunday'),
+    'Bonus Chest Reward' => $lang->t('chest_note_bonus'),
+];
+$_levelRows = \App\Core\Database::getInstance()->query("SELECT name, name_ka FROM levels")->fetchAll();
+$_levelMap = [];
+foreach ($_levelRows as $_l) { $_levelMap[$_l['name']] = $_l['name_ka'] ?? $_l['name']; }
+$_translateNote = function(?string $note) use ($_noteMap, $_levelMap, $locale, $lang): string {
+    if (!$note) return '';
+    if (isset($_noteMap[$note])) return $_noteMap[$note];
+    if (isset($_levelMap[$note])) {
+        $name = ($locale === 'ka' && !empty($_levelMap[$note])) ? $_levelMap[$note] : $note;
+        return $lang->t('levelup_bonus_prefix') . ' ' . $name;
+    }
+    if (strpos($note, 'Goal Completion: ') === 0) {
+        return $lang->t('goal_completion_prefix') . ' ' . substr($note, 17);
+    }
+    return $note;
+};
+
 // Helper function for terminology
 $term = function($standard, $game) use ($useGameTerms, $lang) {
     $key = $useGameTerms ? $game : $standard;
@@ -379,7 +401,18 @@ endif;
                         ?>
                         <i class="bi <?= $iconClass ?> me-2"></i>
                         <div class="min-width-0">
-                            <span><?= htmlspecialchars($locale === 'ka' && !empty($tx['category_name_ka']) ? $tx['category_name_ka'] : ($tx['category_name'] ?? $lang->t('adjustment'))) ?></span>
+                            <?php
+                            $catDisplay = '';
+                            if ($locale === 'ka' && !empty($tx['category_name_ka'])) {
+                                $catDisplay = $tx['category_name_ka'];
+                            } elseif (!empty($tx['category_name'])) {
+                                $catDisplay = $tx['category_name'];
+                            } else {
+                                $translated = $_translateNote($tx['note'] ?? '');
+                                $catDisplay = $translated ?: $lang->t('adjustment');
+                            }
+                            ?>
+                            <span><?= htmlspecialchars($catDisplay) ?></span>
                             <small class="text-muted d-block d-md-inline ms-md-2"><?= $lang->formatDate($tx['transaction_date'], 'month_day') ?></small>
                         </div>
                     </div>
@@ -388,7 +421,7 @@ endif;
                             <img src="<?= $tx['image'] ?>" class="rounded tx-thumb" style="width:32px;height:32px;object-fit:cover;cursor:pointer;" onclick="showTxImage(this.src)" title="<?= $lang->t('view_photo') ?>">
                         <?php endif; ?>
                         <?php if (!empty($tx['note']) && !in_array($tx['type'], ['redeem', 'refund'])): ?>
-                            <i class="bi bi-chat-text-fill text-primary note-popover" style="cursor:pointer;font-size:1rem;" data-bs-toggle="popover" data-bs-content="<?= htmlspecialchars($tx['note']) ?>" data-note-title="<?= $lang->t('note') ?>"></i>
+                            <i class="bi bi-chat-text-fill text-primary note-popover" style="cursor:pointer;font-size:1rem;" data-bs-toggle="popover" data-bs-content="<?= htmlspecialchars($_translateNote($tx['note'])) ?>" data-note-title="<?= $lang->t('note') ?>"></i>
                         <?php else: ?>
                             <i class="bi bi-chat-text text-muted" style="opacity:0.3;font-size:1rem;"></i>
                         <?php endif; ?>

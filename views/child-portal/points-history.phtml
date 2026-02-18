@@ -4,6 +4,28 @@ $nameField = $locale === 'ka' ? 'name_ka' : 'name';
 $useGameTerms = ($settings['use_game_terms'] ?? '0') === '1';
 $ptsLabel = $useGameTerms ? $lang->t('pts_game') : $lang->t('pts');
 $historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('points_history');
+
+// Note translation helper for chest/level-up/goal notes stored as English in DB
+$_noteMap = [
+    'Daily Chest' => $lang->t('chest_note_daily'),
+    'Sunday Golden Chest' => $lang->t('chest_note_sunday'),
+    'Bonus Chest Reward' => $lang->t('chest_note_bonus'),
+];
+$_levelRows = \App\Core\Database::getInstance()->query("SELECT name, name_ka FROM levels")->fetchAll();
+$_levelMap = [];
+foreach ($_levelRows as $_l) { $_levelMap[$_l['name']] = $_l['name_ka'] ?? $_l['name']; }
+$_translateNote = function(?string $note) use ($_noteMap, $_levelMap, $locale, $lang): string {
+    if (!$note) return '';
+    if (isset($_noteMap[$note])) return $_noteMap[$note];
+    if (isset($_levelMap[$note])) {
+        $name = ($locale === 'ka' && !empty($_levelMap[$note])) ? $_levelMap[$note] : $note;
+        return $lang->t('levelup_bonus_prefix') . ' ' . $name;
+    }
+    if (strpos($note, 'Goal Completion: ') === 0) {
+        return $lang->t('goal_completion_prefix') . ' ' . substr($note, 17);
+    }
+    return $note;
+};
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -81,7 +103,18 @@ $historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('poin
                                 $iconClass = !empty($tx['category_icon']) ? $tx['category_icon'] : ($defaultIcons[$tx['type']] ?? 'bi-circle');
                                 ?>
                                 <i class="bi <?= $iconClass ?> me-1"></i>
-                                <?= htmlspecialchars($locale === 'ka' && !empty($tx['category_name_ka']) ? $tx['category_name_ka'] : ($tx['category_name'] ?? '-')) ?>
+                                <?php
+                                $catDisplay = '';
+                                if ($locale === 'ka' && !empty($tx['category_name_ka'])) {
+                                    $catDisplay = $tx['category_name_ka'];
+                                } elseif (!empty($tx['category_name'])) {
+                                    $catDisplay = $tx['category_name'];
+                                } else {
+                                    $translated = $_translateNote($tx['note'] ?? '');
+                                    $catDisplay = ($translated !== ($tx['note'] ?? '')) ? $translated : '-';
+                                }
+                                ?>
+                                <?= htmlspecialchars($catDisplay) ?>
                                 <?php if (!empty($tx['note']) || !empty($tx['reward_name'])): ?>
                                     <?php
                                     $displayNote = '';
@@ -89,15 +122,16 @@ $historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('poin
                                     if (($tx['type'] === 'redeem' || $tx['type'] === 'refund') && !empty($tx['reward_name'])) {
                                         $displayNote = ($locale === 'ka' && !empty($tx['reward_name_ka'])) ? $tx['reward_name_ka'] : $tx['reward_name'];
                                     } elseif (!empty($tx['note'])) {
-                                        $displayNote = $tx['note'];
+                                        $displayNote = $_translateNote($tx['note']);
                                         // Handle old data - strip English prefixes
                                         if ($tx['type'] === 'redeem' || $tx['type'] === 'refund') {
                                             $displayNote = preg_replace('/^Redeemed:\s*/', '', $displayNote);
                                             $displayNote = preg_replace('/^Refund:\s*/', '', $displayNote);
                                             $displayNote = preg_replace('/\s*\(cancelled\)$/', '', $displayNote);
-                                        } elseif (preg_match('/^Level-up bonus:\s*/', $displayNote)) {
-                                            $displayNote = preg_replace('/^Level-up bonus:\s*/', '', $displayNote);
-                                            $displayNote = $lang->t('levelup_bonus_prefix') . ' ' . $displayNote;
+                                        }
+                                        // Skip sub-text if it's same as category display (already shown above)
+                                        if ($displayNote === $catDisplay) {
+                                            $displayNote = '';
                                         }
                                     }
                                     ?>
@@ -112,7 +146,7 @@ $historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('poin
                                         <img src="<?= $tx['image'] ?>" class="rounded" style="width:28px;height:28px;object-fit:cover;cursor:pointer;" onclick="showTxImage(this.src)" title="<?= $lang->t('view_photo') ?>">
                                     <?php endif; ?>
                                     <?php if (!empty($tx['note']) && !in_array($tx['type'], ['redeem', 'refund'])): ?>
-                                        <i class="bi bi-chat-text-fill text-primary note-popover" style="cursor:pointer;" data-bs-toggle="popover" data-bs-content="<?= htmlspecialchars($tx['note']) ?>" data-note-title="<?= $lang->t('note') ?>"></i>
+                                        <i class="bi bi-chat-text-fill text-primary note-popover" style="cursor:pointer;" data-bs-toggle="popover" data-bs-content="<?= htmlspecialchars($_translateNote($tx['note'])) ?>" data-note-title="<?= $lang->t('note') ?>"></i>
                                     <?php else: ?>
                                         <i class="bi bi-chat-text text-muted" style="opacity:0.3;"></i>
                                     <?php endif; ?>
