@@ -110,7 +110,7 @@ $historyTitle = $useGameTerms ? $lang->t('points_history_game') : $lang->t('poin
                                         <img src="<?= $tx['image'] ?>" class="rounded" style="width:28px;height:28px;object-fit:cover;cursor:pointer;" onclick="showTxImage(this.src)" title="<?= $lang->t('view_photo') ?>">
                                     <?php endif; ?>
                                     <?php if (!empty($tx['note']) && !in_array($tx['type'], ['redeem', 'refund'])): ?>
-                                        <i class="bi bi-chat-text-fill text-primary" style="cursor:pointer;" data-bs-toggle="popover" data-bs-trigger="click" data-bs-content="<?= htmlspecialchars($tx['note']) ?>" title="<?= $lang->t('note') ?>"></i>
+                                        <i class="bi bi-chat-text-fill text-primary note-popover" style="cursor:pointer;" data-bs-toggle="popover" data-bs-content="<?= htmlspecialchars($tx['note']) ?>" data-note-title="<?= $lang->t('note') ?>"></i>
                                     <?php else: ?>
                                         <i class="bi bi-chat-text text-muted" style="opacity:0.3;"></i>
                                     <?php endif; ?>
@@ -204,8 +204,32 @@ function showTxImage(src) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function(el) {
-        new bootstrap.Popover(el, { trigger: 'click', html: false });
+    document.querySelectorAll('.note-popover').forEach(function(el) {
+        var title = el.getAttribute('data-note-title') || 'Note';
+        new bootstrap.Popover(el, {
+            trigger: 'click',
+            html: true,
+            title: '<div class="d-flex justify-content-between align-items-center">' + title + '<button type="button" class="btn-close btn-close-sm ms-2" style="font-size:0.65rem;" onclick="closeNotePopover(this)"></button></div>',
+            sanitize: false
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('.note-popover').forEach(function(el) {
+            var pop = bootstrap.Popover.getInstance(el);
+            if (!pop) return;
+            if (!el.contains(e.target) && !document.querySelector('.popover')?.contains(e.target)) {
+                pop.hide();
+            }
+        });
     });
 });
+
+function closeNotePopover(btn) {
+    var popoverEl = btn.closest('.popover');
+    if (popoverEl) {
+        var trigger = document.querySelector('[aria-describedby="' + popoverEl.id + '"]');
+        if (trigger) bootstrap.Popover.getInstance(trigger)?.hide();
+    }
+}
 </script>
