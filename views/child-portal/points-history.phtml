@@ -111,7 +111,7 @@ $_translateNote = function(?string $note) use ($_noteMap, $_levelMap, $locale, $
                                     $catDisplay = $tx['category_name'];
                                 } else {
                                     $translated = $_translateNote($tx['note'] ?? '');
-                                    $catDisplay = ($translated !== ($tx['note'] ?? '')) ? $translated : '-';
+                                    $catDisplay = ($translated !== ($tx['note'] ?? '')) ? $translated : '';
                                 }
                                 ?>
                                 <?= htmlspecialchars($catDisplay) ?>
