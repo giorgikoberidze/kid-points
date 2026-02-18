@@ -528,12 +528,13 @@ function getActivityBadgeColor(string $action): string {
                     <th><?= $lang->t('type') ?></th>
                     <th><?= $lang->t('points') ?></th>
                     <th><?= $lang->t('note') ?></th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
             <?php if (empty($transactions)): ?>
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">
+                    <td colspan="6" class="text-center text-muted py-4">
                         <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i>
                         <p class="mb-0 mt-2"><?= $lang->t('no_transactions') ?></p>
                     </td>
@@ -590,6 +591,17 @@ function getActivityBadgeColor(string $action): string {
                         }
                         echo htmlspecialchars($displayNote);
                         ?>
+                    </td>
+                    <td>
+                        <?php if (!in_array($tx['type'], ['redeem', 'refund'])): ?>
+                            <form method="POST" action="<?= $baseUrl ?>/points/delete/<?= $tx['id'] ?>" class="d-inline" onsubmit="return confirm('<?= $lang->t('confirm_delete_transaction') ?>')">
+                                <input type="hidden" name="_csrf" value="<?= $csrfToken ?>">
+                                <input type="hidden" name="redirect" value="/children/<?= $child['id'] ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="<?= $lang->t('delete_transaction') ?>">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>

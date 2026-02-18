@@ -231,4 +231,70 @@ class PointService
             throw $e;
         }
     }
+
+    public function deleteTransaction(int $txId): bool
+    {
+        $tx = $this->db->query(
+            "SELECT * FROM point_transactions WHERE id = ?",
+            [$txId]
+        )->fetch();
+
+        if (!$tx) return false;
+
+        $childId = (int)$tx['child_id'];
+        $categoryId = $tx['category_id'] ? (int)$tx['category_id'] : null;
+        $type = $tx['type'];
+        $txDate = $tx['transaction_date'];
+
+        $this->db->beginTransaction();
+        try {
+            // If this is a redeem transaction, cancel the linked redemption
+            if ($type === 'redeem') {
+                $this->db->query(
+                    "UPDATE reward_redemptions SET status = 'cancelled', cancelled_at = NOW() WHERE transaction_id = ?",
+                    [$txId]
+                );
+            }
+
+            // Delete the transaction itself
+            $this->db->query("DELETE FROM point_transactions WHERE id = ?", [$txId]);
+
+            // Find and delete level-up bonus transactions triggered by this one
+            // (type='earn', no category, created within 2 seconds of the original)
+            $this->db->query(
+                "DELETE FROM point_transactions
+                 WHERE child_id = ? AND type = 'earn' AND category_id IS NULL
+                 AND ABS(TIMESTAMPDIFF(SECOND, transaction_date, ?)) <= 2
+                 AND id != ?
+                 AND note IN (SELECT name FROM levels)",
+                [$childId, $txDate, $txId]
+            );
+
+            // Recalculate balance
+            (new Child())->updateBalance($childId);
+
+            // Recalculate level (can go down)
+            (new LevelService())->recalculateLevel($childId);
+
+            // Recalculate streak if it was an earn type with a category
+            if ($type === 'earn' && $categoryId) {
+                (new StreakService())->recalculateStreak($childId, $categoryId);
+            }
+
+            // Recalculate achievements (remove undeserved)
+            (new AchievementService())->recalculateAchievements($childId);
+
+            // Log activity
+            (new ActivityService())->logAdminAction(
+                $childId, 'transaction_deleted', 'transaction', $txId,
+                ['type' => $type, 'points' => $tx['points']]
+            );
+
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
 }

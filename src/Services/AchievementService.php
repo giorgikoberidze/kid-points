@@ -58,6 +58,49 @@ class AchievementService
         }
     }
 
+    public function recalculateAchievements(int $childId): void
+    {
+        $totalEarned = (int)$this->db->query(
+            "SELECT COALESCE(SUM(points), 0) as total FROM point_transactions WHERE child_id = ? AND points > 0 AND type != 'refund'",
+            [$childId]
+        )->fetch()['total'];
+
+        $maxStreak = (new StreakService())->getMaxStreak($childId);
+        $redemptionCount = (int)$this->db->query(
+            "SELECT COUNT(*) as cnt FROM reward_redemptions WHERE child_id = ?",
+            [$childId]
+        )->fetch()['cnt'];
+
+        $earned = $this->db->query(
+            "SELECT ca.achievement_id, a.criteria_type, a.criteria_value
+             FROM child_achievements ca
+             JOIN achievements a ON ca.achievement_id = a.id
+             WHERE ca.child_id = ?",
+            [$childId]
+        )->fetchAll();
+
+        foreach ($earned as $a) {
+            $stillQualifies = false;
+            switch ($a['criteria_type']) {
+                case 'total_points':
+                    $stillQualifies = $totalEarned >= $a['criteria_value'];
+                    break;
+                case 'streak':
+                    $stillQualifies = $maxStreak >= $a['criteria_value'];
+                    break;
+                case 'redemptions':
+                    $stillQualifies = $redemptionCount >= $a['criteria_value'];
+                    break;
+            }
+            if (!$stillQualifies) {
+                $this->db->query(
+                    "DELETE FROM child_achievements WHERE child_id = ? AND achievement_id = ?",
+                    [$childId, $a['achievement_id']]
+                );
+            }
+        }
+    }
+
     public function getEarned(int $childId): array
     {
         return $this->db->query("

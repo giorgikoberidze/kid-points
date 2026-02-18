@@ -51,6 +51,56 @@ class StreakService
         );
     }
 
+    public function recalculateStreak(int $childId, int $categoryId): void
+    {
+        $dates = $this->db->query(
+            "SELECT DISTINCT DATE(transaction_date) as d
+             FROM point_transactions
+             WHERE child_id = ? AND category_id = ? AND type = 'earn'
+             ORDER BY d DESC",
+            [$childId, $categoryId]
+        )->fetchAll(\PDO::FETCH_COLUMN);
+
+        if (empty($dates)) {
+            $this->db->query(
+                "DELETE FROM streaks WHERE child_id = ? AND category_id = ?",
+                [$childId, $categoryId]
+            );
+            return;
+        }
+
+        $currentCount = 1;
+        $lastDate = $dates[0];
+        for ($i = 1; $i < count($dates); $i++) {
+            $prev = new \DateTime($dates[$i - 1]);
+            $curr = new \DateTime($dates[$i]);
+            $diff = $prev->diff($curr)->days;
+            if ($diff === 1) {
+                $currentCount++;
+            } else {
+                break;
+            }
+        }
+
+        $streak = $this->db->query(
+            "SELECT longest_count FROM streaks WHERE child_id = ? AND category_id = ?",
+            [$childId, $categoryId]
+        )->fetch();
+
+        if ($streak) {
+            $longest = max($streak['longest_count'], $currentCount);
+            $this->db->query(
+                "UPDATE streaks SET current_count = ?, longest_count = ?, last_date = ? WHERE child_id = ? AND category_id = ?",
+                [$currentCount, $longest, $lastDate, $childId, $categoryId]
+            );
+        } else {
+            $this->db->query(
+                "INSERT INTO streaks (child_id, category_id, current_count, longest_count, last_date) VALUES (?, ?, ?, ?, ?)",
+                [$childId, $categoryId, $currentCount, $currentCount, $lastDate]
+            );
+        }
+    }
+
     public function getStreaks(int $childId): array
     {
         return $this->db->query("

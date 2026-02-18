@@ -75,6 +75,7 @@ $router->post('/children/{id}/multiplier/remove', 'ChildController@removeMultipl
 // Points
 $router->get('/points/add/{childId}', 'PointController@create');
 $router->post('/points', 'PointController@store');
+$router->post('/points/delete/{id}', 'PointController@delete');
 $router->get('/points/history', 'PointController@history');
 
 // Categories

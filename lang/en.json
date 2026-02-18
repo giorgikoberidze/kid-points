@@ -495,5 +495,8 @@
     "add_note": "Add Note",
     "add_photo": "Add Photo",
     "view_photo": "View Photo",
-    "confirm_points": "Confirm Points"
+    "confirm_points": "Confirm Points",
+    "delete_transaction": "Delete Transaction",
+    "confirm_delete_transaction": "Delete this transaction? This will fully reverse its effects.",
+    "transaction_deleted": "Transaction deleted successfully."
 }

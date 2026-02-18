@@ -495,5 +495,8 @@
     "add_note": "შენიშვნის დამატება",
     "add_photo": "ფოტოს დამატება",
     "view_photo": "ფოტოს ნახვა",
-    "confirm_points": "ქულების დადასტურება"
+    "confirm_points": "ქულების დადასტურება",
+    "delete_transaction": "ტრანზაქციის წაშლა",
+    "confirm_delete_transaction": "წავშალოთ ეს ტრანზაქცია? ეფექტი სრულად შებრუნდება.",
+    "transaction_deleted": "ტრანზაქცია წარმატებით წაიშალა."
 }

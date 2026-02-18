@@ -189,6 +189,30 @@ class LevelService
     }
 
     /**
+     * Recalculate level after transaction deletion (can go DOWN levels)
+     */
+    public function recalculateLevel(int $childId): void
+    {
+        $totalEarned = $this->getTotalEarnedPoints($childId);
+        $correctLevel = $this->getLevelForPoints($totalEarned);
+        $correctLevelId = $correctLevel ? $correctLevel['id'] : null;
+
+        // Remove level history entries the child no longer qualifies for
+        $this->db->query(
+            "DELETE clh FROM child_level_history clh
+             JOIN levels l ON clh.level_id = l.id
+             WHERE clh.child_id = ? AND l.points_required > ?",
+            [$childId, $totalEarned]
+        );
+
+        // Update child record
+        $this->db->query(
+            "UPDATE children SET current_level_id = ?, total_points_earned = ?, pending_level_up_id = NULL WHERE id = ?",
+            [$correctLevelId, $totalEarned, $childId]
+        );
+    }
+
+    /**
      * Get level history for a child
      */
     public function getLevelHistory(int $childId): array

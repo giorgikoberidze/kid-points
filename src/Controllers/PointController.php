@@ -75,6 +75,28 @@ class PointController extends Controller
         $this->redirect($redirect);
     }
 
+    public function delete(string $id): void
+    {
+        Auth::requireAuth();
+        if (!$this->validateCsrf()) {
+            $this->redirect('/');
+            return;
+        }
+
+        $lang = \App\Core\Lang::getInstance();
+        $service = new PointService();
+        $result = $service->deleteTransaction((int)$id);
+
+        if ($result) {
+            $this->flash('success', $lang->t('transaction_deleted'));
+        } else {
+            $this->flash('error', $lang->t('not_found'));
+        }
+
+        $redirect = $this->input('redirect', '/points/history');
+        $this->redirect($redirect);
+    }
+
     public function history(): void
     {
         Auth::requireAuth();
