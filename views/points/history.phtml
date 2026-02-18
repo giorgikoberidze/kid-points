@@ -115,10 +115,12 @@ $_translateNote = function(?string $note) use ($_noteMap, $_levelMap, $locale, $
                     </td>
                     <td class="fw-semibold"><?= htmlspecialchars($tx['child_name']) ?></td>
                     <td>
-                        <?php if (!empty($tx['category_icon'])): ?>
-                            <i class="bi <?= $tx['category_icon'] ?> me-1"></i>
-                        <?php endif; ?>
-                        <?= htmlspecialchars($locale === 'ka' && !empty($tx['category_name_ka']) ? $tx['category_name_ka'] : ($tx['category_name'] ?? '-')) ?>
+                        <span class="d-inline-flex align-items-center" style="white-space:nowrap">
+                            <?php if (!empty($tx['category_icon'])): ?>
+                                <i class="bi <?= $tx['category_icon'] ?> me-1"></i>
+                            <?php endif; ?>
+                            <?= htmlspecialchars($locale === 'ka' && !empty($tx['category_name_ka']) ? $tx['category_name_ka'] : ($tx['category_name'] ?? '-')) ?>
+                        </span>
                     </td>
                     <td><span class="badge badge-<?= $tx['type'] ?>"><?= $lang->t($tx['type']) ?></span></td>
                     <td>

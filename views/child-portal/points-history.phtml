@@ -102,19 +102,21 @@ $_translateNote = function(?string $note) use ($_noteMap, $_levelMap, $locale, $
                                 $defaultIcons = ['earn' => 'bi-plus-circle-fill text-success', 'deduct' => 'bi-dash-circle-fill text-danger', 'adjust' => 'bi-sliders text-secondary', 'redeem' => 'bi-gift-fill text-info', 'refund' => 'bi-arrow-counterclockwise text-warning'];
                                 $iconClass = !empty($tx['category_icon']) ? $tx['category_icon'] : ($defaultIcons[$tx['type']] ?? 'bi-circle');
                                 ?>
-                                <i class="bi <?= $iconClass ?> me-1"></i>
-                                <?php
-                                $catDisplay = '';
-                                if ($locale === 'ka' && !empty($tx['category_name_ka'])) {
-                                    $catDisplay = $tx['category_name_ka'];
-                                } elseif (!empty($tx['category_name'])) {
-                                    $catDisplay = $tx['category_name'];
-                                } else {
-                                    $translated = $_translateNote($tx['note'] ?? '');
-                                    $catDisplay = ($translated !== ($tx['note'] ?? '')) ? $translated : '';
-                                }
-                                ?>
-                                <?= htmlspecialchars($catDisplay) ?>
+                                <span class="d-inline-flex align-items-center" style="white-space:nowrap">
+                                    <i class="bi <?= $iconClass ?> me-1"></i>
+                                    <?php
+                                    $catDisplay = '';
+                                    if ($locale === 'ka' && !empty($tx['category_name_ka'])) {
+                                        $catDisplay = $tx['category_name_ka'];
+                                    } elseif (!empty($tx['category_name'])) {
+                                        $catDisplay = $tx['category_name'];
+                                    } else {
+                                        $translated = $_translateNote($tx['note'] ?? '');
+                                        $catDisplay = ($translated !== ($tx['note'] ?? '')) ? $translated : '';
+                                    }
+                                    ?>
+                                    <?= htmlspecialchars($catDisplay) ?>
+                                </span>
                                 <?php if (!empty($tx['note']) || !empty($tx['reward_name'])): ?>
                                     <?php
                                     $displayNote = '';
